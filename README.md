@@ -140,14 +140,6 @@ curl -N -X POST http://localhost:8000/api/chat/demo/stream \
 
 El stream usa el protocolo de AI SDK UI con `x-vercel-ai-ui-message-stream: v1`.
 
-## Que Senala Bien en una Postulacion IA
-
-- Uso real de LangChain y LangGraph, no solo wrappers de chat.
-- Supervisor multiagente con tools especializadas.
-- MCP como capa de integracion con sistemas externos.
-- Streaming full-stack desde el modelo hasta la interfaz.
-- Backend disenado para entornos separados, seguridad por token y cero dependencia en memoria conversacional local.
-
 ## Limitaciones Actuales
 
 - `get_bolivar_rate` es placeholder.
