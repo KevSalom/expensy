@@ -15,9 +15,9 @@ class Settings(BaseSettings):
     airtable_mcp_url: str = "https://mcp.airtable.com/mcp"
     airtable_personal_pat: str
     airtable_demo_pat: str
-    airtable_personal_base_name: str
-    airtable_demo_base_name: str
-    airtable_expenses_table_name: str = "Expenses"
+    airtable_personal_base_id: str
+    airtable_demo_base_id: str
+    airtable_expenses_table_id: str
 
     cors_allowed_origins: str = Field(default="http://localhost:5173")
     api_port: int = 8000
@@ -41,10 +41,10 @@ class Settings(BaseSettings):
     def airtable_pat_for_mode(self, mode: str) -> str:
         return self.airtable_personal_pat if mode == "personal" else self.airtable_demo_pat
 
-    def airtable_base_name_for_mode(self, mode: str) -> str:
+    def airtable_base_id_for_mode(self, mode: str) -> str:
         if mode == "personal":
-            return self.airtable_personal_base_name
-        return self.airtable_demo_base_name
+            return self.airtable_personal_base_id
+        return self.airtable_demo_base_id
 
 
 settings = Settings()
