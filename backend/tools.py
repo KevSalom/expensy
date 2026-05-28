@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from typing import Literal
 
-from langchain_core.tools import StructuredTool
+from langchain_core.tools import tool
 from pydantic import BaseModel, Field
 
 from mcp_client import AirtableMCP
@@ -62,6 +62,7 @@ class BolivarRateInput(BaseModel):
 def create_expensy_tools(mode: Mode):
     airtable = AirtableMCP(mode=mode)
 
+    @tool(args_schema=RegisterExpenseInput)
     async def register_expense(
         amount: float,
         currency: str,
@@ -70,7 +71,10 @@ def create_expensy_tools(mode: Mode):
         description: str | None = None,
         account: str | None = None,
     ) -> str:
-        """Registra un gasto en Airtable cuando el usuario indica monto, moneda y categoria."""
+        """Registra un gasto en Airtable cuando el usuario indica monto, moneda y categoria.
+
+        Requiere amount, currency y category. No inventes datos faltantes; pide aclaracion.
+        """
         fields = {
             "Amount": amount,
             "Currency": currency.upper().strip(),
@@ -85,6 +89,7 @@ def create_expensy_tools(mode: Mode):
             f"{json.dumps(result, ensure_ascii=False, default=str)}"
         )
 
+    @tool(args_schema=RetrieveExpensesInput)
     async def retrieve_expenses(
         query: str | None = None,
         start_date: str | None = None,
@@ -111,8 +116,12 @@ def create_expensy_tools(mode: Mode):
             f"{json.dumps(result, ensure_ascii=False, default=str)}"
         )
 
+    @tool(args_schema=BolivarRateInput)
     async def get_bolivar_rate(source: str | None = None) -> str:
-        """Devuelve un placeholder para la tasa actual del bolivar."""
+        """Placeholder para obtener la tasa actual del bolivar.
+
+        Avisa que aun no tiene integracion real.
+        """
         result = {
             "rate": None,
             "status": "placeholder",
@@ -121,31 +130,4 @@ def create_expensy_tools(mode: Mode):
         }
         return json.dumps(result, ensure_ascii=False)
 
-    register_tool = StructuredTool.from_function(
-        coroutine=register_expense,
-        name="register_expense",
-        description=(
-            "Usa esta herramienta para registrar gastos. Requiere amount, currency "
-            "y category. No inventes datos faltantes; pide aclaracion."
-        ),
-        args_schema=RegisterExpenseInput,
-    )
-    retrieve_tool = StructuredTool.from_function(
-        coroutine=retrieve_expenses,
-        name="retrieve_expenses",
-        description=(
-            "Usa esta herramienta para consultar, buscar o resumir gastos guardados "
-            "en Airtable."
-        ),
-        args_schema=RetrieveExpensesInput,
-    )
-    rate_tool = StructuredTool.from_function(
-        coroutine=get_bolivar_rate,
-        name="get_bolivar_rate",
-        description=(
-            "Placeholder para obtener la tasa actual del bolivar. Avisa que aun no "
-            "tiene integracion real."
-        ),
-        args_schema=BolivarRateInput,
-    )
-    return register_tool, retrieve_tool, rate_tool
+    return register_expense, retrieve_expenses, get_bolivar_rate
