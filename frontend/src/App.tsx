@@ -8,6 +8,10 @@ type ChatMode = 'personal' | 'demo'
 type TextPart = { type: string; text?: string }
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000'
+const chatRuntime: { mode: ChatMode; token: string } = {
+  mode: 'demo',
+  token: '',
+}
 
 function getMessageText(message: UIMessage): string {
   return (message.parts ?? [])
@@ -30,20 +34,21 @@ function App() {
   const transport = useMemo(
     () =>
       new DefaultChatTransport({
-        api: modeEndpoint(mode),
-        headers: () => ({
-          Authorization: `Bearer ${token.trim()}`,
-        }),
+        api: modeEndpoint('demo'),
         prepareSendMessagesRequest: ({ messages }) => {
           const lastMessage = messages[messages.length - 1]
           return {
+            api: modeEndpoint(chatRuntime.mode),
+            headers: {
+              Authorization: `Bearer ${chatRuntime.token.trim()}`,
+            },
             body: {
               message: lastMessage ? getMessageText(lastMessage) : '',
             },
           }
         },
       }),
-    [mode, token],
+    [],
   )
 
   const { messages, sendMessage, stop, status, error, setMessages, clearError } =
@@ -63,8 +68,14 @@ function App() {
   }
 
   function handleModeChange(nextMode: ChatMode) {
+    chatRuntime.mode = nextMode
     setMode(nextMode)
     clearError()
+  }
+
+  function handleTokenChange(nextToken: string) {
+    chatRuntime.token = nextToken
+    setToken(nextToken)
   }
 
   return (
@@ -94,19 +105,15 @@ function App() {
           </div>
 
           <label className="tokenField">
-            <span>Bearer token</span>
+            <span>Contraseña {mode === 'demo' ? 'demo' : 'personal'}</span>
             <input
               type="password"
               value={token}
-              placeholder={mode === 'demo' ? 'Token demo' : 'Token personal'}
-              onChange={(event) => setToken(event.target.value)}
+              placeholder={mode === 'demo' ? 'Contraseña demo' : 'Contraseña personal'}
+              onChange={(event) => handleTokenChange(event.target.value)}
             />
+            <small>Usa la contraseña configurada para este modo.</small>
           </label>
-
-          <div className="statusPanel">
-            <span className={`statusDot ${isStreaming ? 'live' : ''}`} />
-            <span>{isStreaming ? 'Recibiendo respuesta' : 'Listo para enviar'}</span>
-          </div>
 
           <button
             type="button"

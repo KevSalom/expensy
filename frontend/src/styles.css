@@ -137,33 +137,17 @@ h1 {
   padding: 0 12px;
 }
 
+.tokenField small {
+  color: #6a756b;
+  font-size: 0.78rem;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
 .tokenField input:focus,
 .composer textarea:focus {
   border-color: #2d6a4f;
   box-shadow: 0 0 0 3px rgba(45, 106, 79, 0.16);
-}
-
-.statusPanel {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px;
-  border: 1px solid rgba(23, 32, 24, 0.12);
-  border-radius: 8px;
-  color: #4f5c50;
-  background: rgba(255, 250, 240, 0.7);
-}
-
-.statusDot {
-  width: 10px;
-  height: 10px;
-  border-radius: 999px;
-  background: #8f9b8f;
-}
-
-.statusDot.live {
-  background: #b05d31;
-  box-shadow: 0 0 0 5px rgba(176, 93, 49, 0.18);
 }
 
 .secondaryAction {
