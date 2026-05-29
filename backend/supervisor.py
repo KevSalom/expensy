@@ -94,28 +94,24 @@ async def stream_supervisor_response(message: str, mode: Mode) -> AsyncIterator[
     
     event_count = 0
     
-    async for event in graph.astream_events(
-        input_state, config={"configurable": {"mode": mode}, "recursion_limit": 50}, version="v2"
+    async for event in graph.astream(
+        input_state,
+        config={"configurable": {"mode": mode}, "recursion_limit": 50},
+        stream_mode="messages"
     ):
         event_count += 1
-        event_name = event.get("name", "unknown")
-        event_type = event.get("event", "unknown")
+        msg, metadata = event
+        langgraph_node = metadata.get("langgraph_node", "unknown")
         
-        if event_type == "on_chat_model_start":
-            print(f"[PERF]   LLM start ({event_name}): {time.time()-start:.3f}s")
-        elif event_type == "on_chat_model_end":
-            print(f"[PERF]   LLM end ({event_name}): {time.time()-start:.3f}s")
-        elif event_type == "on_tool_start":
-            print(f"[PERF]   Tool start ({event_name}): {time.time()-start:.3f}s")
-        elif event_type == "on_tool_end":
-            print(f"[PERF]   Tool end ({event_name}): {time.time()-start:.3f}s")
+        print(f"[PERF]   msg #{event_count} from node={langgraph_node}, type={type(msg).__name__}")
         
-        if event_type != "on_chat_model_stream":
+        if langgraph_node != "supervisor":
+            print(f"[PERF]     >>> SKIPPING (not supervisor)")
             continue
-
-        chunk = event.get("data", {}).get("chunk")
-        content = getattr(chunk, "content", None)
+        
+        content = getattr(msg, "content", None)
         if isinstance(content, str) and content:
+            print(f"[PERF]     content: '{content[:80]}...' " if len(content) > 80 else f"[PERF]     content: '{content}'")
             yield content
     
     print(f"[PERF] Stream completo: {time.time()-start:.3f}s ({event_count} eventos)")
