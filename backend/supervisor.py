@@ -10,8 +10,8 @@ from langchain_core.messages import HumanMessage
 from langgraph.prebuilt import create_react_agent
 from langgraph_supervisor import create_supervisor
 
-from mcp_client import get_writable_field_ids
 from prompts import make_reader_prompt, make_writer_prompt, SUPERVISOR_PROMPT
+from airtable_rest import get_writable_field_ids
 from rest_tools import get_rest_tools
 from config import settings
 

@@ -181,3 +181,22 @@ def search_records(
     """Convenience function to search records."""
     client = AirtableREST(mode)
     return client.search_records(table_id, query, fields)
+
+
+READ_ONLY_TYPES = {"formula", "rollup", "lookup", "count", "autoNumber"}
+
+
+def _fetch_table_schema(mode: Mode) -> list[dict]:
+    """Fetch the full table schema from Airtable REST API."""
+    client = AirtableREST(mode)
+    return client.get_table_fields(settings.airtable_expenses_table_id)
+
+
+def get_writable_field_ids(mode: Mode) -> dict[str, str]:
+    """Mapeo nombre -> field ID solo para campos editables."""
+    fields = _fetch_table_schema(mode)
+    return {
+        f["name"]: f["id"]
+        for f in fields
+        if f.get("type") not in READ_ONLY_TYPES
+    }
