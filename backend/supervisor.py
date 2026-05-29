@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import AsyncIterator
+from datetime import date
 from typing import Literal
 
 from langchain_openai import ChatOpenAI
@@ -8,7 +9,7 @@ from langchain_core.messages import HumanMessage
 from langgraph.prebuilt import create_react_agent
 from langgraph_supervisor import create_supervisor
 
-from mcp_client import get_airtable_tools
+from mcp_client import get_airtable_tools, get_writable_field_ids
 from prompts import READER_AGENT_PROMPT, SUPERVISOR_PROMPT, WRITER_AGENT_PROMPT
 from config import settings
 
@@ -25,25 +26,39 @@ def create_model() -> ChatOpenAI:
     )
 
 
+def format_field_map(field_map: dict[str, str]) -> str:
+    if not field_map:
+        return "(No se pudo obtener el mapeo de campos)"
+    lines = [f"  - `{name}` -> `{id}`" for name, id in sorted(field_map.items())]
+    return "\n".join(lines)
+
+
 async def create_expensy_graph(mode: Mode):
     model = create_model()
     tools = await get_airtable_tools(mode)
     
     base_id = settings.airtable_base_id_for_mode(mode)
     table_id = settings.airtable_expenses_table_id
+    field_map = get_writable_field_ids(mode)
+    field_map_str = format_field_map(field_map)
+    today = date.today().isoformat()
 
     writer_agent = create_react_agent(
         model=model,
         tools=tools,
         name="expense_writer_agent",
-        prompt=WRITER_AGENT_PROMPT.format(base_id=base_id, table_id=table_id),
+        prompt=WRITER_AGENT_PROMPT.format(
+            base_id=base_id, table_id=table_id, field_map_str=field_map_str, today=today
+        ),
     )
 
     reader_agent = create_react_agent(
         model=model,
         tools=tools,
         name="expense_reader_agent",
-        prompt=READER_AGENT_PROMPT.format(base_id=base_id, table_id=table_id),
+        prompt=READER_AGENT_PROMPT.format(
+            base_id=base_id, table_id=table_id, field_map_str=field_map_str
+        ),
     )
 
     supervisor = create_supervisor(
