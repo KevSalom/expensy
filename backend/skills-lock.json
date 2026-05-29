@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "skills": {
+    "airtable-cli": {
+      "source": "airtable/skills",
+      "sourceType": "github",
+      "skillPath": "plugins/airtable/skills/airtable-cli/SKILL.md",
+      "computedHash": "08df35ed8deb75f85947a4f6e4c1a5c90ed0154e8b7c944cd243e45081a1fc46"
+    },
+    "airtable-filters": {
+      "source": "airtable/skills",
+      "sourceType": "github",
+      "skillPath": "plugins/airtable/skills/airtable-filters/SKILL.md",
+      "computedHash": "8eac21b32994895d8d3fae86e2aa59dc104ee6d41b2bd70c3268686b27c2f277"
+    },
+    "airtable-overview": {
+      "source": "airtable/skills",
+      "sourceType": "github",
+      "skillPath": "plugins/airtable/skills/airtable-overview/SKILL.md",
+      "computedHash": "c10f5f4031ae82b25e45b1bf68ef1db277234fb62d74d47fff4a8b4835009ee7"
+    }
+  }
+}
