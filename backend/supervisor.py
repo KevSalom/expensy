@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import time
 from collections.abc import AsyncIterator
 from datetime import date
 from typing import Literal
@@ -34,12 +35,23 @@ def format_field_map(field_map: dict[str, str]) -> str:
 
 
 async def create_expensy_graph(mode: Mode):
+    start = time.time()
+    print(f"[PERF] Iniciando create_expensy_graph...")
+    
     model = create_model()
+    print(f"[PERF]   Model creado: {time.time()-start:.3f}s")
+    
+    t0 = time.time()
     tools = await get_airtable_tools(mode)
+    print(f"[PERF]   get_airtable_tools: {time.time()-t0:.3f}s")
     
     base_id = settings.airtable_base_id_for_mode(mode)
     table_id = settings.airtable_expenses_table_id
+    
+    t0 = time.time()
     field_map = get_writable_field_ids(mode)
+    print(f"[PERF]   get_writable_field_ids: {time.time()-t0:.3f}s")
+    
     field_map_str = format_field_map(field_map)
     today = date.today().isoformat()
 
@@ -65,24 +77,46 @@ async def create_expensy_graph(mode: Mode):
         agents=[writer_agent, reader_agent],
         model=model,
         prompt=SUPERVISOR_PROMPT,
-        add_handoff_back_messages=True,
-        output_mode="full_history",
-        reasoning_effort="low"
     )
-    return supervisor.compile()
+    compiled = supervisor.compile()
+    print(f"[PERF] Grafo completo: {time.time()-start:.3f}s")
+    return compiled
 
 
 async def stream_supervisor_response(message: str, mode: Mode) -> AsyncIterator[str]:
+    start = time.time()
+    print(f"[PERF] stream_supervisor_response iniciado")
+    
     graph = await create_expensy_graph(mode)
+    print(f"[PERF]   Grafo listo: {time.time()-start:.3f}s")
+    
     input_state = {"messages": [HumanMessage(content=message)]}
-
+    
+    event_count = 0
+    last_event_time = start
+    
     async for event in graph.astream_events(
         input_state, config={"configurable": {"mode": mode}}, version="v2"
     ):
-        if event.get("event") != "on_chat_model_stream":
+        event_count += 1
+        event_name = event.get("name", "unknown")
+        event_type = event.get("event", "unknown")
+        
+        if event_type == "on_chat_model_start":
+            print(f"[PERF]   LLM start ({event_name}): {time.time()-start:.3f}s")
+        elif event_type == "on_chat_model_end":
+            print(f"[PERF]   LLM end ({event_name}): {time.time()-start:.3f}s")
+        elif event_type == "on_tool_start":
+            print(f"[PERF]   Tool start ({event_name}): {time.time()-start:.3f}s")
+        elif event_type == "on_tool_end":
+            print(f"[PERF]   Tool end ({event_name}): {time.time()-start:.3f}s")
+        
+        if event_type != "on_chat_model_stream":
             continue
 
         chunk = event.get("data", {}).get("chunk")
         content = getattr(chunk, "content", None)
         if isinstance(content, str) and content:
             yield content
+    
+    print(f"[PERF] Stream completo: {time.time()-start:.3f}s ({event_count} eventos)")
