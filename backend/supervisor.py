@@ -10,8 +10,9 @@ from langchain_core.messages import HumanMessage
 from langgraph.prebuilt import create_react_agent
 from langgraph_supervisor import create_supervisor
 
-from mcp_client import get_airtable_tools, get_writable_field_ids
-from prompts import READER_AGENT_PROMPT, SUPERVISOR_PROMPT, WRITER_AGENT_PROMPT
+from mcp_client import get_writable_field_ids
+from prompts import make_reader_prompt, make_writer_prompt, SUPERVISOR_PROMPT
+from rest_tools import get_rest_tools
 from config import settings
 
 Mode = Literal["personal", "demo"]
@@ -41,9 +42,8 @@ async def create_expensy_graph(mode: Mode):
     model = create_model()
     print(f"[PERF]   Model creado: {time.time()-start:.3f}s")
     
-    t0 = time.time()
-    tools = await get_airtable_tools(mode)
-    print(f"[PERF]   get_airtable_tools: {time.time()-t0:.3f}s")
+    tools = get_rest_tools(mode)
+    print(f"[PERF]   REST tools cargadas: {time.time()-start:.3f}s")
     
     base_id = settings.airtable_base_id_for_mode(mode)
     table_id = settings.airtable_expenses_table_id
@@ -59,7 +59,7 @@ async def create_expensy_graph(mode: Mode):
         model=model,
         tools=tools,
         name="expense_writer_agent",
-        prompt=WRITER_AGENT_PROMPT.format(
+        prompt=make_writer_prompt(
             base_id=base_id, table_id=table_id, field_map_str=field_map_str, today=today
         ),
     )
@@ -68,8 +68,8 @@ async def create_expensy_graph(mode: Mode):
         model=model,
         tools=tools,
         name="expense_reader_agent",
-        prompt=READER_AGENT_PROMPT.format(
-            base_id=base_id, table_id=table_id, field_map_str=field_map_str
+        prompt=make_reader_prompt(
+            base_id=base_id, table_id=table_id, field_map_str=field_map_str, today=today
         ),
     )
 
@@ -93,10 +93,9 @@ async def stream_supervisor_response(message: str, mode: Mode) -> AsyncIterator[
     input_state = {"messages": [HumanMessage(content=message)]}
     
     event_count = 0
-    last_event_time = start
     
     async for event in graph.astream_events(
-        input_state, config={"configurable": {"mode": mode}}, version="v2"
+        input_state, config={"configurable": {"mode": mode}, "recursion_limit": 50}, version="v2"
     ):
         event_count += 1
         event_name = event.get("name", "unknown")
