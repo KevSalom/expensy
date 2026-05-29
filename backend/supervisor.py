@@ -7,7 +7,7 @@ from typing import Literal
 
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage
-from langgraph.prebuilt import create_react_agent
+from langchain.agents import create_agent
 from langgraph_supervisor import create_supervisor
 
 from prompts import make_reader_prompt, make_writer_prompt, SUPERVISOR_PROMPT
@@ -55,22 +55,22 @@ async def create_expensy_graph(mode: Mode):
     field_map_str = format_field_map(field_map)
     today = date.today().isoformat()
 
-    writer_agent = create_react_agent(
+    writer_agent = create_agent(
         model=model,
         tools=tools,
-        name="expense_writer_agent",
-        prompt=make_writer_prompt(
+        system_prompt=make_writer_prompt(
             base_id=base_id, table_id=table_id, field_map_str=field_map_str, today=today
         ),
+        name="expense_writer_agent",
     )
 
-    reader_agent = create_react_agent(
+    reader_agent = create_agent(
         model=model,
         tools=tools,
-        name="expense_reader_agent",
-        prompt=make_reader_prompt(
+        system_prompt=make_reader_prompt(
             base_id=base_id, table_id=table_id, field_map_str=field_map_str, today=today
         ),
+        name="expense_reader_agent",
     )
 
     supervisor = create_supervisor(
