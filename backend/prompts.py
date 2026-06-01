@@ -71,6 +71,12 @@ def make_reader_prompt(base_id: str, table_id: str, field_map_str: str, today: s
     
     today_date = date.fromisoformat(today)
     tomorrow = today_date + timedelta(days=1)
+    yesterday = today_date - timedelta(days=1)
+    yesterday_next = today_date
+    
+    last_week_start = today_date - timedelta(days=7)
+    last_week_end = today_date
+    
     first_of_month = today_date.replace(day=1)
     last_month = (first_of_month - timedelta(days=1)).replace(day=1)
     
@@ -83,6 +89,12 @@ def make_reader_prompt(base_id: str, table_id: str, field_map_str: str, today: s
 - Base ID: {base_id}
 - Table ID: {table_id}
 - Fecha de hoy: {today}
+
+## Fechas de referencia
+- Hoy: {today}
+- Ayer: {yesterday.isoformat()}
+- Hace 7 días: {last_week_start.isoformat()}
+- Inicio del mes actual: {first_of_month.isoformat()}
 
 ## Mapeo de campos (nombre → Field ID)
 {field_map_str}
@@ -163,6 +175,29 @@ list_records_tool(
 )
 ```
 
+### "¿Qué gastos tuve ayer?" o "gastos del día de ayer"
+```
+list_records_tool(
+    mode="personal",
+    table_id="{table_id}",
+    fields=["Monto", "Nota", "Fecha de Gasto", "Categoría"],
+    filter_by_formula="AND({{Fecha de Gasto}}>='{yesterday.isoformat()}',{{Fecha de Gasto}}<'{yesterday_next.isoformat()}')",
+    max_records=100
+)
+```
+
+### "¿Cuánto gasté esta semana?" o "gastos de los últimos 7 días"
+```
+list_records_tool(
+    mode="personal",
+    table_id="{table_id}",
+    fields=["Monto", "Nota", "Fecha de Gasto"],
+    filter_by_formula="AND({{Fecha de Gasto}}>='{last_week_start.isoformat()}',{{Fecha de Gasto}}<'{last_week_end.isoformat()}')",
+    max_records=100
+)
+```
+Luego suma todos los montos.
+
 ### "¿Cuánto gasté en pollo este mes?"
 ```
 list_records_tool(
@@ -222,14 +257,19 @@ Interpretar las solicitudes del usuario en lenguaje natural y delegarlas al agen
   - Ejemplos: "gasté 50 USD en comida", "registrá 30 USD de transporte ayer"
   
 - **expense_reader_agent**: Cuando el usuario quiere CONSULTAR o VER gastos existentes
-  - Ejemplos: "¿cuánto gasté en comida este mes?", "mostrame mis gastos de mayo"
+  - Ejemplos: "¿cuánto gasté en comida este mes?", "mostrame mis gastos de mayo", "cuales fueron los gastos de ayer", "gastos del día de ayer"
 
 ## Reglas de delegación
 1. Analiza la intención del usuario:
    - Verbos como "gasté", "registrá", "agregá", "anotá" → writer_agent
-   - Verbos como "cuánto", "mostrame", "buscá", "cuáles" → reader_agent
+   - Verbos como "cuánto", "mostrame", "buscá", "cuáles", "ver", "listar" → reader_agent
 
-2. Si la solicitud es ambigua, pide clarificación antes de delegar
+2. **NO pidas clarificación** para consultas de fecha claras:
+   - "gastos de ayer" → reader_agent (consulta directa)
+   - "gastos de hoy" → reader_agent (consulta directa)
+   - "gastos de esta semana" → reader_agent (consulta directa)
+   - "gastos del mes pasado" → reader_agent (consulta directa)
+   - Solo pide clarificación si falta información CRÍTICA (ej: monto para registrar)
 
 3. No inventes datos:
    - No asumas montos, fechas o categorías que el usuario no mencionó
