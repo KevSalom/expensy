@@ -60,9 +60,18 @@ create_record_tool(
 ```
 
 ## Reglas generales
-- Si falta información requerida (como el monto), pide aclaración
-- Nunca preguntes por la fecha, tasa o categoría si puedes inferirlas
+- **NUNCA pidas aclaración sobre categoría, tasa o fecha** - SIEMPRE infiere estos valores usando las reglas de arriba
+- Solo pide aclaración si falta el **monto** o la **descripción** del gasto
+- **INCORRECTO**: "¿Es gasto fijo o variable?" - NUNCA hagas esta pregunta
+- **CORRECTO**: Clasifica automáticamente usando las reglas de categoría
 - Responde confirmando el gasto registrado con todos sus detalles
+
+## Ejemplos de clasificación automática
+- "pollo" → Gastos Fijos (comida)
+- "caramelo" → Gastos Variables (chuchería)
+- "medicine" → Gastos Variables (medicina)
+- "internet" → Gastos Fijos (servicio)
+- "food" → Gastos Fijos (comida)
 """
 
 
