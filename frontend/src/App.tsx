@@ -1,81 +1,106 @@
-import { useMemo, useState } from 'react'
-import { useChat, type UIMessage } from '@ai-sdk/react'
-import { DefaultChatTransport } from 'ai'
-import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
+import { useMemo, useState } from "react";
+import { useChat, type UIMessage } from "@ai-sdk/react";
+import { DefaultChatTransport } from "ai";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
-type ChatMode = 'personal' | 'demo'
-type TextPart = { type: string; text?: string }
+type ChatMode = "personal" | "demo";
+type TextPart = { type: "text"; text?: string };
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000'
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
 const chatRuntime: { mode: ChatMode; token: string } = {
-  mode: 'demo',
-  token: '',
-}
+  mode: "demo",
+  token: "",
+};
 
 function getMessageText(message: UIMessage): string {
   return (message.parts ?? [])
     .map((part) => {
-      const textPart = part as TextPart
-      return textPart.type === 'text' ? textPart.text ?? '' : ''
+      if (part.type === "text") {
+        return (part as TextPart).text ?? "";
+      }
+      return "";
     })
-    .join('')
+    .join("");
 }
 
 function modeEndpoint(mode: ChatMode): string {
-  return `${API_BASE_URL}/api/chat/${mode}/stream`
+  return `${API_BASE_URL}/api/chat/${mode}/stream`;
 }
 
 function App() {
-  const [mode, setMode] = useState<ChatMode>('demo')
-  const [token, setToken] = useState('')
-  const [input, setInput] = useState('')
+  const [mode, setMode] = useState<ChatMode>("demo");
+  const [token, setToken] = useState("");
+  const [input, setInput] = useState("");
+  const [progressText, setProgressText] = useState<string | null>(null);
 
   const transport = useMemo(
     () =>
       new DefaultChatTransport({
-        api: modeEndpoint('demo'),
+        api: modeEndpoint("demo"),
         prepareSendMessagesRequest: ({ messages }) => {
-          const lastMessage = messages[messages.length - 1]
+          const lastMessage = messages[messages.length - 1];
           return {
             api: modeEndpoint(chatRuntime.mode),
             headers: {
               Authorization: `Bearer ${chatRuntime.token.trim()}`,
             },
             body: {
-              message: lastMessage ? getMessageText(lastMessage) : '',
+              message: lastMessage ? getMessageText(lastMessage) : "",
             },
-          }
+          };
         },
       }),
     [],
-  )
+  );
 
-  const { messages, sendMessage, stop, status, error, setMessages, clearError } =
-    useChat({
-      transport,
-    })
+  const {
+    messages,
+    sendMessage,
+    stop,
+    status,
+    error,
+    setMessages,
+    clearError,
+  } = useChat({
+    transport,
+    onData: (dataPart: { type: string; data?: unknown }) => {
+      if (
+        dataPart.type === "data-progress" &&
+        dataPart.data &&
+        typeof dataPart.data === "object"
+      ) {
+        const d = dataPart.data as { text?: string };
+        if (d.text) {
+          setProgressText(d.text);
+        }
+      }
+    },
+  });
 
-  const isStreaming = status === 'submitted' || status === 'streaming'
-  const canSend = input.trim().length > 0 && token.trim().length > 0 && !isStreaming
+  const isStreaming = status === "submitted" || status === "streaming";
+  const canSend =
+    input.trim().length > 0 && token.trim().length > 0 && !isStreaming;
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    const text = input.trim()
-    if (!text || !canSend) return
-    setInput('')
-    await sendMessage({ text })
+    event.preventDefault();
+    const text = input.trim();
+    if (!text || !canSend) return;
+    setInput("");
+    setProgressText("Analizando tu solicitud...");
+    await sendMessage({ text });
   }
 
   function handleModeChange(nextMode: ChatMode) {
-    chatRuntime.mode = nextMode
-    setMode(nextMode)
-    clearError()
+    chatRuntime.mode = nextMode;
+    setMode(nextMode);
+    clearError();
   }
 
   function handleTokenChange(nextToken: string) {
-    chatRuntime.token = nextToken
-    setToken(nextToken)
+    chatRuntime.token = nextToken;
+    setToken(nextToken);
   }
 
   return (
@@ -90,26 +115,28 @@ function App() {
           <div className="modeSwitch" aria-label="Modo de datos">
             <button
               type="button"
-              className={mode === 'demo' ? 'active' : ''}
-              onClick={() => handleModeChange('demo')}
+              className={mode === "demo" ? "active" : ""}
+              onClick={() => handleModeChange("demo")}
             >
               Demo
             </button>
             <button
               type="button"
-              className={mode === 'personal' ? 'active' : ''}
-              onClick={() => handleModeChange('personal')}
+              className={mode === "personal" ? "active" : ""}
+              onClick={() => handleModeChange("personal")}
             >
               Personal
             </button>
           </div>
 
           <label className="tokenField">
-            <span>Contraseña {mode === 'demo' ? 'demo' : 'personal'}</span>
+            <span>Contraseña {mode === "demo" ? "demo" : "personal"}</span>
             <input
               type="password"
               value={token}
-              placeholder={mode === 'demo' ? 'Contraseña demo' : 'Contraseña personal'}
+              placeholder={
+                mode === "demo" ? "Contraseña demo" : "Contraseña personal"
+              }
               onChange={(event) => handleTokenChange(event.target.value)}
             />
             <small>Usa la contraseña configurada para este modo.</small>
@@ -119,9 +146,9 @@ function App() {
             type="button"
             className="secondaryAction"
             onClick={() => {
-              stop()
-              setMessages([])
-              clearError()
+              stop();
+              setMessages([]);
+              clearError();
             }}
           >
             Limpiar chat
@@ -132,17 +159,27 @@ function App() {
           <div className="messageList">
             {messages.length === 0 ? (
               <div className="emptyState">
-                <p>Prueba con “registra cafe 3 USD en comida” o “cuanto gaste esta semana”.</p>
+                <p>
+                  Prueba con "registra cafe 3 USD en comida" o "cuanto gaste
+                  esta semana".
+                </p>
               </div>
             ) : (
               messages.map((message) => (
                 <article
                   key={message.id}
-                  className={`messageBubble ${message.role === 'user' ? 'user' : 'assistant'}`}
+                  className={`messageBubble ${message.role === "user" ? "user" : "assistant"}`}
                 >
-                  <span className="messageRole">
-                    {message.role === 'user' ? 'Tu' : 'Expensy'}
-                  </span>
+                  <div className="messageHeader">
+                    <span className="messageRole">
+                      {message.role === "user" ? "Tu" : "Expensy"}
+                    </span>
+                  </div>
+                  {message.role === "assistant" &&
+                    progressText &&
+                    isStreaming && (
+                      <span className="messageProgress">{progressText}</span>
+                    )}
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>
                     {getMessageText(message)}
                   </ReactMarkdown>
@@ -167,9 +204,9 @@ function App() {
               placeholder="Escribe un gasto o una consulta..."
               onChange={(event) => setInput(event.target.value)}
               onKeyDown={(event) => {
-                if (event.key === 'Enter' && !event.shiftKey) {
-                  event.preventDefault()
-                  event.currentTarget.form?.requestSubmit()
+                if (event.key === "Enter" && !event.shiftKey) {
+                  event.preventDefault();
+                  event.currentTarget.form?.requestSubmit();
                 }
               }}
             />
@@ -185,7 +222,7 @@ function App() {
         </section>
       </section>
     </main>
-  )
+  );
 }
 
-export default App
+export default App;

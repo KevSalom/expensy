@@ -10,7 +10,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from config import Settings, settings
-from supervisor import stream_supervisor_response
+from supervisor import stream_supervisor_events
 
 logging.basicConfig(
     level=logging.INFO,
@@ -82,15 +82,26 @@ def ui_message_event(payload: dict) -> str:
 async def generate_ui_stream(message: str, mode: Mode) -> AsyncIterator[str]:
     message_id = f"msg_{uuid.uuid4().hex}"
     text_id = f"text_{uuid.uuid4().hex}"
+    
+    initial_progress = "💭 Analizando tu solicitud..."
+    progress_shown = False
 
     yield ui_message_event({"type": "start", "messageId": message_id})
     yield ui_message_event({"type": "text-start", "id": text_id})
 
     try:
-        async for chunk in stream_supervisor_response(message=message, mode=mode):
-            if chunk:
+        async for event in stream_supervisor_events(message=message, mode=mode):
+            if event["type"] == "progress":
+                if not progress_shown:
+                    progress_shown = True
+                    yield ui_message_event({"type": "data-progress", "data": {"text": initial_progress}})
+                yield ui_message_event({"type": "data-progress", "data": {"text": event["text"]}})
+            elif event["type"] == "final":
+                if not progress_shown:
+                    progress_shown = True
+                    yield ui_message_event({"type": "data-progress", "data": {"text": initial_progress}})
                 yield ui_message_event(
-                    {"type": "text-delta", "id": text_id, "delta": chunk}
+                    {"type": "text-delta", "id": text_id, "delta": event["text"]}
                 )
     except Exception:
         logger.exception("Expensy stream failed for mode=%s", mode)

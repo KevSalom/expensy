@@ -49,7 +49,6 @@ button {
 
 .controlRail,
 .chatPanel {
-  border: 1px solid rgba(23, 32, 24, 0.16);
   background: rgba(255, 252, 244, 0.82);
   box-shadow: 0 18px 60px rgba(23, 32, 24, 0.12);
   backdrop-filter: blur(14px);
@@ -191,20 +190,19 @@ h1 {
 .messageBubble {
   width: min(720px, 92%);
   padding: 14px 16px;
-  border: 1px solid rgba(23, 32, 24, 0.14);
   border-radius: 8px;
-  background: #fffaf0;
+  background: transparent;
 }
 
 .messageBubble.user {
   align-self: flex-end;
   color: #fffaf0;
-  border-color: #2d6a4f;
   background: #2d6a4f;
 }
 
 .messageBubble.assistant {
   align-self: flex-start;
+  background: transparent;
 }
 
 .messageRole {
@@ -213,6 +211,41 @@ h1 {
   font-size: 0.75rem;
   font-weight: 800;
   text-transform: uppercase;
+}
+
+.messageBubble.user .messageRole {
+  color: rgba(255, 250, 240, 0.7);
+}
+
+.messageBubble.assistant .messageRole {
+  color: #6a756b;
+}
+
+.messageHeader {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+.messageProgress {
+  font-size: 0.72rem;
+  color: #4f5c50;
+  font-style: italic;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.messageBubble.user .messageProgress {
+  color: rgba(255, 250, 240, 0.7);
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
 }
 
 .messageBubble p {
@@ -282,6 +315,55 @@ button:hover:not(:disabled) {
 button:disabled {
   cursor: not-allowed;
   opacity: 0.55;
+}
+
+.progress-indicator,
+.progress-indicator-inline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  font-size: 0.9rem;
+  color: #4f5c50;
+}
+
+.progress-indicator {
+  justify-content: center;
+}
+
+.progress-indicator-inline {
+  align-self: flex-start;
+  margin-top: 4px;
+}
+
+.progress-text {
+  font-style: italic;
+}
+
+.progress-dots {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.progress-dots span {
+  animation: bounce 1.4s infinite;
+  font-size: 1.1em;
+  line-height: 1;
+}
+
+.progress-dots span:nth-child(1) { animation-delay: 0s; }
+.progress-dots span:nth-child(2) { animation-delay: 0.2s; }
+.progress-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes bounce {
+  0%, 80%, 100% {
+    opacity: 0;
+    transform: translateY(0);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(-4px);
+  }
 }
 
 @media (max-width: 780px) {
