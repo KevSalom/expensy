@@ -11,7 +11,7 @@ from langchain.agents import create_agent
 from langgraph_supervisor import create_supervisor
 
 from prompts import make_reader_prompt, make_writer_prompt, SUPERVISOR_PROMPT
-from airtable_rest import get_writable_field_ids
+from field_ids import get_field_ids
 from rest_tools import get_rest_tools
 from config import settings
 
@@ -53,10 +53,7 @@ async def create_expensy_graph(mode: Mode):
     base_id = settings.airtable_base_id_for_mode(mode)
     table_id = settings.airtable_expenses_table_id
     
-    t0 = time.time()
-    field_map = get_writable_field_ids(mode)
-    print(f"[PERF]   get_writable_field_ids: {time.time()-t0:.3f}s")
-    
+    field_map = get_field_ids(mode)
     field_map_str = format_field_map(field_map)
     today = date.today().isoformat()
 

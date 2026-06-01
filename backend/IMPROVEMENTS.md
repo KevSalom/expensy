@@ -19,7 +19,7 @@
 | # | Problema | Impacto |
 |---|----------|---------|
 | 1 | **No hay state schema** (`TypedDict` / `StateSchema`). El grafo opera sobre un dict plano. | Sin tipado, sin reducers, riesgo de pérdida de mensajes en updates internos del grafo. |
-| 2 | **Recrea el grafo en cada request** (`create_expensy_graph(mode)` dentro de `stream_supervisor_response`). | Ineficiente; el grafo debería compilarse una vez y reutilizarse por modo. |
+| 2 | ~~**Recrea el grafo en cada request** (`create_expensy_graph(mode)` dentro de `stream_supervisor_response`).~~ ✅ **Completado** | ~~Ineficiente; el grafo debería compilarse una vez y reutilizarse por modo.~~ Field IDs ahora hardcodeados en `field_ids.py` (generado por script), eliminando la llamada HTTP a Airtable en cada request. |
 | 3 | Streaming filtra manualmente `on_chat_model_stream` de `astream_events`. | Debería usar `stream_mode="messages"` de LangGraph para un flujo más limpio y con metadatos. |
 | 4 | **Sin `ToolNode` ni manejo de errores de tools**. | Si una tool falla, no se devuelve `ToolMessage` al LLM para recuperación. |
 | 5 | **Sin `RetryPolicy` ni `recursion_limit`**. | Sin protección contra loops infinitos ni reintentos en fallos transitorios. |
@@ -55,7 +55,7 @@ Las siguientes decisiones arquitectónicas se mantienen tras evaluación; no son
 ## 5. Recomendaciones de Alto Nivel (Aplicables)
 
 1. **Definir un `State` tipado** (`TypedDict`) para controlar el flujo interno del grafo durante un request, aunque no persista entre requests.
-2. **Compilar el grafo una vez** por modo y cachearlo (evitar reconstrucción en cada request).
+2. ~~**Compilar el grafo una vez** por modo y cachearlo (evitar reconstrucción en cada request).~~ ✅ **Completado** — Field IDs hardcodeados en `field_ids.py`. Regenerar con `python scripts/generate_field_ids.py` si cambian los campos en Airtable.
 3. ~~**Refactorizar tools a `@tool`** decorator~~ ✅ **Completado** — Migradas de `agents.py` a `tools.py`.
 4. ~~**Usar patrón moderno de langchain-mcp-adapters**~~ ✅ **Completado** — Los agentes ahora usan las tools MCP directamente sin wrappers intermedios.
 5. **Agregar `RetryPolicy`** en nodos que interactúan con MCP/Airtable y `recursion_limit` en la invocación del grafo.
@@ -66,6 +66,7 @@ Las siguientes decisiones arquitectónicas se mantienen tras evaluación; no son
 
 ## 6. Notas de Implementación (Pendientes de Discusión)
 
+- **Field IDs hardcodeados**: `field_ids.py` contiene los field IDs de Airtable. Regenerar con `python scripts/generate_field_ids.py` si cambian los campos en Airtable.
 - **Cacheo del grafo**: ¿Global en memoria (variable de módulo) o usando `lru_cache`?
 - **Estructura del `State`**: ¿Qué campos son necesarios para el flujo interno? (ej: `messages`, `mode`, `route`).
 - **Nodo Supervisor**: ¿Se mantiene como LLM que decide, o se usa una clasificación más simple (ej: regex/keywords) para enrutar?
