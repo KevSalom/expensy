@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import logging
 from typing import Any, Literal
 
 from langchain_core.tools import tool
 
 from airtable_rest import AirtableREST, get_airtable_rest
 from config import settings
+
+logger = logging.getLogger(__name__)
 
 Mode = Literal["personal", "demo"]
 
@@ -38,19 +41,26 @@ def list_records_tool(
     Returns:
         List of records with id, fields, and createdTime
     """
+    logger.info(f"Listing records: mode={mode}, table_id={table_id}, fields={fields}, filter={filter_by_formula}")
     client = _get_client(mode)
     
     sort = None
     if sort_field and sort_direction:
         sort = [{"field": sort_field, "direction": sort_direction}]
     
-    return client.list_records(
-        table_id=table_id,
-        fields=fields,
-        filter_by_formula=filter_by_formula,
-        sort=sort,
-        max_records=max_records,
-    )
+    try:
+        result = client.list_records(
+            table_id=table_id,
+            fields=fields,
+            filter_by_formula=filter_by_formula,
+            sort=sort,
+            max_records=max_records,
+        )
+        logger.info(f"Listed {len(result)} records")
+        return result
+    except Exception as e:
+        logger.error(f"Failed to list records: {e}")
+        raise
 
 
 @tool
@@ -69,8 +79,15 @@ def create_record_tool(
     Returns:
         The created record with id and fields
     """
+    logger.info(f"Creating record: mode={mode}, table_id={table_id}, fields={fields}")
     client = _get_client(mode)
-    return client.create_record(table_id, fields)
+    try:
+        result = client.create_record(table_id, fields)
+        logger.info(f"Record created successfully: {result}")
+        return result
+    except Exception as e:
+        logger.error(f"Failed to create record: {e}")
+        raise
 
 
 @tool
@@ -91,8 +108,15 @@ def search_records_tool(
     Returns:
         List of matching records
     """
+    logger.info(f"Searching records: mode={mode}, table_id={table_id}, query={query}")
     client = _get_client(mode)
-    return client.search_records(table_id, query, fields)
+    try:
+        result = client.search_records(table_id, query, fields)
+        logger.info(f"Found {len(result)} records")
+        return result
+    except Exception as e:
+        logger.error(f"Failed to search records: {e}")
+        raise
 
 
 def get_rest_tools(mode: Mode) -> list:

@@ -64,7 +64,7 @@ class AirtableREST:
         params = []
         if fields:
             for f in fields:
-                params.append(f"fields={urllib.parse.quote(f, safe='')}")
+                params.append(f"fields[]={urllib.parse.quote(f, safe='')}")
         if filter_by_formula:
             params.append(f"filterByFormula={urllib.parse.quote(filter_by_formula, safe='')}")
         if sort:

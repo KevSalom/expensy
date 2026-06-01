@@ -67,6 +67,16 @@ create_record_tool(
 
 
 def make_reader_prompt(base_id: str, table_id: str, field_map_str: str, today: str) -> str:
+    from datetime import date, timedelta
+    
+    today_date = date.fromisoformat(today)
+    tomorrow = today_date + timedelta(days=1)
+    first_of_month = today_date.replace(day=1)
+    last_month = (first_of_month - timedelta(days=1)).replace(day=1)
+    
+    month_name = today_date.strftime("%B %Y")
+    last_month_name = last_month.strftime("%B %Y")
+    
     return f"""Eres el agente lector de Expensy. Tu responsabilidad es consultar y resumir gastos desde Airtable.
 
 ## Configuración de Airtable
@@ -100,23 +110,29 @@ Parámetros:
 
 ## Fórmulas de filtro de Airtable
 
+### Filtrar por fecha exacta (hoy):
+```
+AND({{Fecha de Gasto}}>='{today}',{{Fecha de Gasto}}<'{tomorrow.isoformat()}')
+```
+IMPORTANTE: Airtable guarda fechas con timestamp. Usa rango con el día siguiente, NO igualdad directa.
+
 ### Filtrar por texto en Nota (contiene):
 ```
 FIND('pollo',{{Nota}})>0
 ```
 Esto busca "pollo" en el campo Nota.
 
-### Filtrar por fecha (mes actual):
+### Filtrar por mes actual ({month_name}):
 ```
-{{Fecha de Gasto}}>='2026-05-01'
+{{Fecha de Gasto}}>='{first_of_month.isoformat()}'
 ```
 Usa formato YYYY-MM-DD para fechas.
 
 ### Combinar filtros (AND):
 ```
-AND({{Fecha de Gasto}}>='2026-05-01',FIND('pollo',{{Nota}})>0)
+AND({{Fecha de Gasto}}>='{first_of_month.isoformat()}',FIND('pollo',{{Nota}})>0)
 ```
-Busca "pollo" en registros de mayo 2026.
+Busca "pollo" en registros de {month_name}.
 
 ### Ordenar resultados:
 sort_field: "Monto"
@@ -136,13 +152,24 @@ Los registros devueltos tienen esta estructura:
 
 ## Ejemplos de consultas
 
+### "¿Qué gastos tengo hoy?" o "gastos de hoy"
+```
+list_records_tool(
+    mode="personal",
+    table_id="{table_id}",
+    fields=["Monto", "Nota", "Fecha de Gasto", "Categoría"],
+    filter_by_formula="AND({{Fecha de Gasto}}>='{today}',{{Fecha de Gasto}}<'{tomorrow.isoformat()}')",
+    max_records=100
+)
+```
+
 ### "¿Cuánto gasté en pollo este mes?"
 ```
 list_records_tool(
     mode="personal",
     table_id="{table_id}",
     fields=["Monto", "Nota", "Fecha de Gasto"],
-    filter_by_formula="AND({{Fecha de Gasto}}>='2026-05-01',FIND('pollo',{{Nota}})>0)",
+    filter_by_formula="AND({{Fecha de Gasto}}>='{first_of_month.isoformat()}',FIND('pollo',{{Nota}})>0)",
     max_records=100
 )
 ```
@@ -154,7 +181,7 @@ list_records_tool(
     mode="personal",
     table_id="{table_id}",
     fields=["Monto", "Nota", "Fecha de Gasto"],
-    filter_by_formula="{{Fecha de Gasto}}>='2026-05-01'",
+    filter_by_formula="{{Fecha de Gasto}}>='{first_of_month.isoformat()}'",
     sort_field="Monto",
     sort_direction="desc",
     max_records=1
@@ -167,7 +194,7 @@ list_records_tool(
     mode="personal",
     table_id="{table_id}",
     fields=["Monto"],
-    filter_by_formula="{{Fecha de Gasto}}>='2026-05-01'",
+    filter_by_formula="{{Fecha de Gasto}}>='{first_of_month.isoformat()}'",
     max_records=100
 )
 ```
@@ -175,9 +202,9 @@ Luego suma todos los montos.
 
 ## Nota sobre fechas
 
-Como hoy es {today}, el mes actual es mayo 2026:
-- Mayo 2026: usa fecha >= '2026-05-01'
-- Abril 2026 (mes pasado): usa fecha >= '2026-04-01'
+Hoy es {today}, el mes actual es {month_name}:
+- {month_name}: usa fecha >= '{first_of_month.isoformat()}'
+- {last_month_name} (mes pasado): usa fecha >= '{last_month.isoformat()}'
 
 ## Reglas
 - Para sumas, OBTÉN los registros y calcula tú mismo
