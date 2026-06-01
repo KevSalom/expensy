@@ -32,8 +32,9 @@ function modeEndpoint(mode: ChatMode): string {
 function App() {
   const [mode, setMode] = useState<ChatMode>("demo");
   const [token, setToken] = useState("");
-  const [input, setInput] = useState("");
+  const [input, setInput] = useState("cual fue el ultimo gasto?");
   const [progressText, setProgressText] = useState<string | null>(null);
+  const [currentMessageId, setCurrentMessageId] = useState<string | null>(null);
 
   const transport = useMemo(
     () =>
@@ -71,7 +72,10 @@ function App() {
         dataPart.data &&
         typeof dataPart.data === "object"
       ) {
-        const d = dataPart.data as { text?: string };
+        const d = dataPart.data as { messageId?: string; text?: string };
+        if (d.messageId) {
+          setCurrentMessageId(d.messageId);
+        }
         if (d.text) {
           setProgressText(d.text);
         }
@@ -88,7 +92,6 @@ function App() {
     const text = input.trim();
     if (!text || !canSend) return;
     setInput("");
-    setProgressText("Analizando tu solicitud...");
     await sendMessage({ text });
   }
 
@@ -176,6 +179,7 @@ function App() {
                     </span>
                   </div>
                   {message.role === "assistant" &&
+                    message.id === currentMessageId &&
                     progressText &&
                     isStreaming && (
                       <span className="messageProgress">{progressText}</span>
