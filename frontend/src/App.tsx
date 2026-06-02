@@ -70,6 +70,7 @@ function AssistantMessage({ message }: { message: unknown }) {
 function App() {
   const [mode, setMode] = useState<ChatMode>("demo");
   const [token, setToken] = useState("");
+  const [configOpen, setConfigOpen] = useState(false);
 
   const transport = useMemo(
     () =>
@@ -82,19 +83,13 @@ function App() {
               ?.filter((p) => p.type === "text")
               .map((p) => (p as { text?: string }).text ?? "")
               .join("") ?? "";
-          const request = {
+          return {
             api: modeEndpoint(chatRuntime.mode),
             headers: {
               Authorization: `Bearer ${chatRuntime.token.trim()}`,
             },
             body: { message: text },
           };
-          console.log("prepareSendMessagesRequest:", {
-            mode: chatRuntime.mode,
-            token: chatRuntime.token.trim() ? "***" : "(empty)",
-            api: request.api,
-          });
-          return request;
         },
       }),
     [mode],
@@ -115,6 +110,13 @@ function App() {
   function handleTokenChange(nextToken: string) {
     chatRuntime.token = nextToken;
     setToken(nextToken);
+  }
+
+  function clearChat() {
+    chat.stop();
+    chat.setMessages([]);
+    chat.clearError();
+    setConfigOpen(false);
   }
 
   return (
@@ -159,11 +161,7 @@ function App() {
           <button
             type="button"
             className="secondaryAction"
-            onClick={() => {
-              chat.stop();
-              chat.setMessages([]);
-              chat.clearError();
-            }}
+            onClick={clearChat}
           >
             Limpiar chat
           </button>
@@ -238,8 +236,83 @@ function App() {
                 </div>
               </ComposerPrimitive.Root>
             </ThreadPrimitive.Root>
+
+            <nav className="bottomNav" aria-label="Navegacion">
+              <button type="button" className="active" aria-current="page">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                </svg>
+                Chat
+              </button>
+              <button type="button" onClick={() => setConfigOpen(true)}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="3" />
+                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                </svg>
+                Config
+              </button>
+            </nav>
           </section>
         </AssistantRuntimeProvider>
+
+        <div
+          className={`configDrawerOverlay ${configOpen ? "open" : ""}`}
+          onClick={() => setConfigOpen(false)}
+        />
+        <aside className={`configDrawer ${configOpen ? "open" : ""}`} aria-label="Configuracion">
+          <div className="drawerHeader">
+            <h2>Configuracion</h2>
+            <button
+              type="button"
+              className="drawerClose"
+              onClick={() => setConfigOpen(false)}
+              aria-label="Cerrar"
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M18 6L6 18M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          <div className="drawerContent">
+            <div className="modeSwitch" aria-label="Modo de datos">
+              <button
+                type="button"
+                className={mode === "demo" ? "active" : ""}
+                onClick={() => handleModeChange("demo")}
+              >
+                Demo
+              </button>
+              <button
+                type="button"
+                className={mode === "personal" ? "active" : ""}
+                onClick={() => handleModeChange("personal")}
+              >
+                Personal
+              </button>
+            </div>
+
+            <label className="tokenField">
+              <span>Contraseña {mode === "demo" ? "demo" : "personal"}</span>
+              <input
+                type="password"
+                value={token}
+                placeholder={
+                  mode === "demo" ? "Contraseña demo" : "Contraseña personal"
+                }
+                onChange={(event) => handleTokenChange(event.target.value)}
+              />
+              <small>Usa la contraseña configurada para este modo.</small>
+            </label>
+
+            <button
+              type="button"
+              className="secondaryAction"
+              onClick={clearChat}
+            >
+              Limpiar chat
+            </button>
+          </div>
+        </aside>
       </section>
     </main>
   );
