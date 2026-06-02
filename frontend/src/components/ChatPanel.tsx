@@ -19,8 +19,9 @@ export function ChatPanel({ error, isStreaming, canSend, onClearError, onStop }:
           <AuiIf condition={(s) => s.thread.isEmpty}>
             <div className="emptyState">
               <p>
-                Prueba con "registra cafe 3 USD en comida" o "cuanto gaste
-                esta semana".
+                <span className="emptyStatePrompt">Tengamos tus finanzas al día.</span>
+                {" "}
+                <span className="emptyStateQuestion">¿Qué quieres hacer hoy?</span>
               </p>
             </div>
           </AuiIf>
