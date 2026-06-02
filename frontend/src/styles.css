@@ -43,7 +43,7 @@ button {
   grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
   gap: 18px;
   width: min(1180px, 100%);
-  min-height: calc(100vh - 48px);
+  height: calc(100vh - 48px);
   margin: 0 auto;
 }
 
@@ -60,6 +60,8 @@ button {
   gap: 22px;
   padding: 22px;
   border-radius: 8px;
+  height: 100%;
+  overflow-y: auto;
 }
 
 .eyebrow {
@@ -155,11 +157,19 @@ h1 {
 }
 
 .chatPanel {
-  display: grid;
-  grid-template-rows: 1fr auto auto;
+  display: flex;
+  flex-direction: column;
   min-width: 0;
+  height: 100%;
   overflow: hidden;
   border-radius: 8px;
+}
+
+.chatPanelInner {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
 }
 
 .messageList {
@@ -169,6 +179,7 @@ h1 {
   min-height: 0;
   padding: 22px;
   overflow-y: auto;
+  flex: 1;
 }
 
 .emptyState {
@@ -284,11 +295,25 @@ h1 {
   background: rgba(235, 229, 216, 0.72);
 }
 
-.composer textarea {
+.composer textarea,
+.composer [data-composer-input] {
+  width: 100%;
   min-height: 64px;
   max-height: 180px;
   padding: 12px;
+  border: 1px solid rgba(23, 32, 24, 0.2);
+  border-radius: 8px;
+  color: #172018;
+  background: #fffaf0;
   resize: vertical;
+  outline: none;
+  font: inherit;
+}
+
+.composer textarea:focus,
+.composer [data-composer-input]:focus {
+  border-color: #2d6a4f;
+  box-shadow: 0 0 0 3px rgba(45, 106, 79, 0.16);
 }
 
 .composerActions {
@@ -373,7 +398,7 @@ button:disabled {
 
   .workspace {
     grid-template-columns: 1fr;
-    min-height: calc(100vh - 24px);
+    height: calc(100vh - 24px);
   }
 
   .controlRail {
