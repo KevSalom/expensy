@@ -8,8 +8,8 @@
 ## 1. Arquitectura Actual (Resumen)
 
 - **FastAPI** stateless con 2 endpoints de chat streaming (`personal` / `demo`) vía HTTP REST + SSE.
-- **Supervisor** (`langgraph-supervisor`) que orquesta 2 agentes ReAct (`writer` y `reader`) creados con `create_react_agent`.
-- **Tools MCP directas**: Los agentes usan las herramientas MCP de Airtable directamente sin wrappers intermedios, siguiendo el patrón moderno de `langchain-mcp-adapters`.
+- **Supervisor** (`langgraph-supervisor`) que orquesta 2 agentes ReAct (`writer` y `reader`) creados con `create_agent`.
+- **Tools REST directas**: Los agentes usan herramientas LangChain tipadas (`@tool`) que llaman a la REST API de Airtable via HTTP plano (`urllib`), sin SDK ni MCP.
 - **Sin persistencia**: cada request recrea el grafo y no hay estado entre llamadas (diseño intencional).
 
 ---
@@ -19,13 +19,11 @@
 | # | Problema | Impacto |
 |---|----------|---------|
 | 1 | **No hay state schema** (`TypedDict` / `StateSchema`). El grafo opera sobre un dict plano. | Sin tipado, sin reducers, riesgo de pérdida de mensajes en updates internos del grafo. |
-| 2 | ~~**Recrea el grafo en cada request** (`create_expensy_graph(mode)` dentro de `stream_supervisor_response`).~~ ✅ **Completado** | ~~Ineficiente; el grafo debería compilarse una vez y reutilizarse por modo.~~ Field IDs ahora hardcodeados en `field_ids.py` (generado por script), eliminando la llamada HTTP a Airtable en cada request. |
+| 2 | **Recrea el grafo en cada request** (`create_expensy_graph(mode)` dentro de `stream_supervisor_response`). | Ineficiente; el grafo debería compilarse una vez y reutilizarse por modo. |
 | 3 | Streaming filtra manualmente `on_chat_model_stream` de `astream_events`. | Debería usar `stream_mode="messages"` de LangGraph para un flujo más limpio y con metadatos. |
 | 4 | **Sin `ToolNode` ni manejo de errores de tools**. | Si una tool falla, no se devuelve `ToolMessage` al LLM para recuperación. |
 | 5 | **Sin `RetryPolicy` ni `recursion_limit`**. | Sin protección contra loops infinitos ni reintentos en fallos transitorios. |
-| 6 | ~~Tools creadas con `StructuredTool.from_function` en vez de `@tool` decorator.~~ ✅ **Completado** | ~~Más verboso; el decorator es el estándar actual de `langchain-core`.~~ Migradas a `@tool` en `tools.py`. |
-| 7 | ~~Wrappers intermedios para tools MCP~~ ✅ **Completado** | ~~Capa innecesaria de abstracción.~~ Los agentes ahora usan las tools MCP directamente siguiendo el patrón moderno de `langchain-mcp-adapters`. |
-| 8 | Prompts embebidos con f-strings en la creación del grafo. | Mejor pasar contexto vía `config` o state para mayor flexibilidad y evitar reconstrucción. |
+| 6 | Prompts embebidos con f-strings en la creación del grafo. | Mejor pasar contexto vía `config` o state para mayor flexibilidad y evitar reconstrucción. |
 
 ---
 
@@ -55,12 +53,10 @@ Las siguientes decisiones arquitectónicas se mantienen tras evaluación; no son
 ## 5. Recomendaciones de Alto Nivel (Aplicables)
 
 1. **Definir un `State` tipado** (`TypedDict`) para controlar el flujo interno del grafo durante un request, aunque no persista entre requests.
-2. ~~**Compilar el grafo una vez** por modo y cachearlo (evitar reconstrucción en cada request).~~ ✅ **Completado** — Field IDs hardcodeados en `field_ids.py`. Regenerar con `python scripts/generate_field_ids.py` si cambian los campos en Airtable.
-3. ~~**Refactorizar tools a `@tool`** decorator~~ ✅ **Completado** — Migradas de `agents.py` a `tools.py`.
-4. ~~**Usar patrón moderno de langchain-mcp-adapters**~~ ✅ **Completado** — Los agentes ahora usan las tools MCP directamente sin wrappers intermedios.
-5. **Agregar `RetryPolicy`** en nodos que interactúan con MCP/Airtable y `recursion_limit` en la invocación del grafo.
-6. **Migrar streaming** a `stream_mode="messages"` para un consumo más idiomático de LangGraph.
-7. **Externalizar prompts** del f-string; pasar contexto (como `mode_label`) vía `configurable` en el `config` de invocación.
+2. **Compilar el grafo una vez** por modo y cachearlo (evitar reconstrucción en cada request).
+3. **Agregar `RetryPolicy`** en nodos que interactúan con Airtable y `recursion_limit` en la invocación del grafo.
+4. **Migrar streaming** a `stream_mode="messages"` para un consumo más idiomático de LangGraph.
+5. **Externalizar prompts** del f-string; pasar contexto (como `mode_label`) vía `configurable` en el `config` de invocación.
 
 ---
 
@@ -70,5 +66,4 @@ Las siguientes decisiones arquitectónicas se mantienen tras evaluación; no son
 - **Cacheo del grafo**: ¿Global en memoria (variable de módulo) o usando `lru_cache`?
 - **Estructura del `State`**: ¿Qué campos son necesarios para el flujo interno? (ej: `messages`, `mode`, `route`).
 - **Nodo Supervisor**: ¿Se mantiene como LLM que decide, o se usa una clasificación más simple (ej: regex/keywords) para enrutar?
-- **Manejo de errores de MCP**: ¿Se quiere un fallback a mensaje de error genérico o que el agente intente recuperarse?
-
+- **Manejo de errores de Airtable**: ¿Se quiere un fallback a mensaje de error genérico o que el agente intente recuperarse?

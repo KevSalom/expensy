@@ -12,7 +12,6 @@ class Settings(BaseSettings):
     personal_api_token: str
     demo_api_token: str
 
-    airtable_mcp_url: str = "https://mcp.airtable.com/mcp"
     airtable_personal_pat: str
     airtable_demo_pat: str
     airtable_personal_base_id: str

@@ -1,6 +1,6 @@
 # Expensy Backend
 
-FastAPI stateless para Expensy. Recibe mensajes de chat, valida bearer tokens y delega en un supervisor LangGraph/LangChain que usa Airtable MCP.
+FastAPI stateless para Expensy. Recibe mensajes de chat, valida bearer tokens y delega en un supervisor LangGraph/LangChain que usa la REST API de Airtable.
 
 ## Setup
 
@@ -13,13 +13,14 @@ uvicorn main:app --reload --port 8000
 
 ## `.env`
 
+Ver `.env.example`:
+
 ```env
 OPENAI_API_KEY=sk-...
 OPENAI_BASE_URL=https://api.openai.com/v1
 OPENAI_MODEL=gpt-4o-mini
 PERSONAL_API_TOKEN=personal-token
 DEMO_API_TOKEN=demo-token
-AIRTABLE_MCP_URL=https://mcp.airtable.com/mcp
 AIRTABLE_PERSONAL_PAT=pat...
 AIRTABLE_DEMO_PAT=pat...
 AIRTABLE_PERSONAL_BASE_ID=app...

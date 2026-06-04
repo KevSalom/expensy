@@ -104,7 +104,7 @@ async def generate_ui_stream(message: str, mode: Mode) -> AsyncIterator[str]:
                 "id": text_id,
                 "delta": (
                     "No pude completar la accion por un error tecnico. "
-                    "Revisa la configuracion de Airtable MCP/OpenAI y vuelve a intentar."
+                    "Revisa la configuracion de Airtable/OpenAI y vuelve a intentar."
                 ),
             }
         )
