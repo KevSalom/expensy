@@ -1,23 +1,25 @@
-type ChatMode = "personal" | "demo";
+import type { Mode } from "../auth";
 
 type Props = {
   open: boolean;
-  mode: ChatMode;
-  token: string;
-  onModeChange: (mode: ChatMode) => void;
-  onTokenChange: (token: string) => void;
+  mode: Mode;
+  userName: string | null;
+  isAuthenticated: boolean;
+  onSwitchMode: (mode: Mode) => void;
   onClose: () => void;
   onClearChat: () => void;
+  onLogout: () => void;
 };
 
 export function ConfigDrawer({
   open,
   mode,
-  token,
-  onModeChange,
-  onTokenChange,
+  userName,
+  isAuthenticated,
+  onSwitchMode,
   onClose,
   onClearChat,
+  onLogout,
 }: Props) {
   return (
     <>
@@ -25,7 +27,10 @@ export function ConfigDrawer({
         className={`configDrawerOverlay ${open ? "open" : ""}`}
         onClick={onClose}
       />
-      <aside className={`configDrawer ${open ? "open" : ""}`} aria-label="Configuracion">
+      <aside
+        className={`configDrawer ${open ? "open" : ""}`}
+        aria-label="Configuracion"
+      >
         <div className="drawerHeader">
           <h2>Configuracion</h2>
           <button
@@ -34,49 +39,60 @@ export function ConfigDrawer({
             onClick={onClose}
             aria-label="Cerrar"
           >
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg
+              viewBox="0 0 24 24"
+              width="16"
+              height="16"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
               <path d="M18 6L6 18M6 6l12 12" />
             </svg>
           </button>
         </div>
         <div className="drawerContent">
-          <div className="modeSwitch" aria-label="Modo de datos">
-            <button
-              type="button"
-              className={mode === "demo" ? "active" : ""}
-              onClick={() => onModeChange("demo")}
-            >
-              Demo
-            </button>
-            <button
-              type="button"
-              className={mode === "personal" ? "active" : ""}
-              onClick={() => onModeChange("personal")}
-            >
-              Personal
-            </button>
-          </div>
-
-          <label className="tokenField">
-            <span>Contraseña {mode === "demo" ? "demo" : "personal"}</span>
-            <input
-              type="password"
-              value={token}
-              placeholder={
-                mode === "demo" ? "Contraseña demo" : "Contraseña personal"
-              }
-              onChange={(event) => onTokenChange(event.target.value)}
-            />
-            <small>Usa la contraseña configurada para este modo.</small>
-          </label>
+          {isAuthenticated ? (
+            <div className="sessionInfo">
+              <p className="userBadge">
+                {userName ? `Sesion: ${userName}` : "Sesion: modo demo"}
+              </p>
+              <p className="sessionModeLabel">
+                Activa en{" "}
+                <strong>{mode === "personal" ? "Personal" : "Demo"}</strong>
+              </p>
+            </div>
+          ) : null}
 
           <button
             type="button"
             className="secondaryAction"
             onClick={onClearChat}
+            disabled={!isAuthenticated}
           >
             Limpiar chat
           </button>
+
+          {isAuthenticated ? (
+            <>
+              <button
+                type="button"
+                className="secondaryAction"
+                onClick={() =>
+                  onSwitchMode(mode === "personal" ? "demo" : "personal")
+                }
+              >
+                Cambiar a {mode === "personal" ? "Demo" : "Personal"}
+              </button>
+              <button
+                type="button"
+                className="secondaryAction logoutAction"
+                onClick={onLogout}
+              >
+                Cerrar sesion
+              </button>
+            </>
+          ) : null}
         </div>
       </aside>
     </>

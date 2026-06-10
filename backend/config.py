@@ -9,14 +9,25 @@ class Settings(BaseSettings):
     openai_base_url: str = "https://api.openai.com/v1"
     openai_model: str
 
-    personal_api_token: str
-    demo_api_token: str
+    # Legacy tokens retained for backwards compatibility with existing
+    # clients. The /api/auth/login flow now issues JWTs and is the
+    # preferred auth path. These are not read by the new auth code.
+    personal_api_token: str = ""
+    demo_api_token: str = ""
 
     airtable_personal_pat: str
     airtable_demo_pat: str
     airtable_personal_base_id: str
     airtable_demo_base_id: str
     airtable_expenses_table_id: str
+
+    # Auth (name + password, JWT).
+    jwt_secret: str
+    jwt_algorithm: str = "HS256"
+    # JSON array of {"name": str, "password_hash": str}.
+    users_json: str = "[]"
+    # bcrypt hash of the demo password.
+    demo_password_hash: str = ""
 
     cors_allowed_origins: str = Field(default="http://localhost:5173")
     api_port: int = 8000

@@ -103,8 +103,10 @@ OPENAI_API_KEY=sk-...
 OPENAI_BASE_URL=https://api.openai.com/v1
 OPENAI_MODEL=gpt-4o-mini
 
-PERSONAL_API_TOKEN=personal-token
-DEMO_API_TOKEN=demo-token
+# Auth (name + password, JWT).
+JWT_SECRET=replace-with-32-byte-hex
+USERS_JSON=[{"name":"kev","password_hash":"$2b$12$..."}]
+DEMO_PASSWORD_HASH=$2b$12$...
 
 AIRTABLE_PERSONAL_PAT=pat...
 AIRTABLE_DEMO_PAT=pat...
@@ -113,6 +115,53 @@ AIRTABLE_DEMO_BASE_ID=app...
 AIRTABLE_EXPENSES_TABLE_ID=tbl...
 
 CORS_ALLOWED_ORIGINS=http://localhost:5173
+```
+
+### Generar secretos
+
+```bash
+# JWT_SECRET (32 bytes hex)
+openssl rand -hex 32
+
+# Hash bcrypt para un usuario o para el modo demo
+python -c "from passlib.hash import bcrypt; print(bcrypt.hash('tu_clave'))"
+```
+
+## Autenticacion
+
+El flujo de login es `POST /api/auth/login` con `{ name?, password, mode }`:
+
+- `mode: "personal"` requiere `name` + `password`; valida contra `USERS_JSON` (hash bcrypt).
+- `mode: "demo"` requiere solo `password`; valida contra `DEMO_PASSWORD_HASH`.
+
+El backend responde con `{ token, name, mode, expires_at }`. El JWT se firma con HS256 usando `JWT_SECRET` y expira a 7 dias en personal o 1 hora en demo.
+
+El frontend guarda el token en `localStorage` (personal) o `sessionStorage` (demo) y lo envia en cada request como `Authorization: Bearer <token>`. El modo demo **no persiste entre cierres de pestaña**.
+
+Endpoints:
+
+- `POST /api/auth/login` body `{name?, password, mode}` → `{token, name, mode, expires_at}`
+- `POST /api/auth/logout` → `{ok: true}` (no-op; el cliente limpia el storage)
+- `GET /api/auth/me` → `{name, mode, expires_at}` o 401
+
+Los endpoints de chat (`/api/chat/personal/stream`, `/api/chat/demo/stream`) requieren JWT del modo correspondiente. Un token personal no funciona en el endpoint demo y viceversa.
+
+Ejemplo curl:
+
+```bash
+# Login
+curl -X POST http://localhost:8000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"name":"kev","password":"tu_clave","mode":"personal"}'
+
+# Uso con el token
+TOKEN="..."
+curl -H "Authorization: Bearer $TOKEN" http://localhost:8000/api/auth/me
+
+curl -N -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -X POST http://localhost:8000/api/chat/personal/stream \
+  -d '{"message":"hola"}'
 ```
 
 ## Comandos

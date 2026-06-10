@@ -2,23 +2,30 @@ import json
 import logging
 import uuid
 from collections.abc import AsyncIterator
-from typing import Annotated, Literal
+from datetime import datetime, timezone
+from typing import Literal
 
-from fastapi import Depends, FastAPI, Header, HTTPException, Request
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
+from auth import (
+    Mode,
+    create_access_token,
+    get_current_user,
+    require_demo_user,
+    require_personal_user,
+)
 from config import Settings, settings
 from supervisor import stream_supervisor_events
+from users import verify_demo_password, verify_user
 
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
-
-Mode = Literal["personal", "demo"]
 
 app = FastAPI(title="Expensy API")
 
@@ -35,26 +42,27 @@ class ChatRequest(BaseModel):
     message: str = Field(..., min_length=1)
 
 
+class LoginRequest(BaseModel):
+    name: str | None = None
+    password: str = Field(..., min_length=1)
+    mode: Mode
+
+
+class LoginResponse(BaseModel):
+    token: str
+    name: str | None
+    mode: Mode
+    expires_at: str
+
+
+class MeResponse(BaseModel):
+    name: str | None
+    mode: Mode
+    expires_at: str
+
+
 def get_settings() -> Settings:
     return settings
-
-
-async def verify_bearer_token(
-    authorization: Annotated[str | None, Header()] = None,
-    config: Settings = Depends(get_settings),
-) -> str:
-    if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="Missing bearer token")
-
-    return authorization.removeprefix("Bearer ").strip()
-
-
-def assert_token_for_mode(token: str, mode: Mode, config: Settings) -> None:
-    expected_token = (
-        config.personal_api_token if mode == "personal" else config.demo_api_token
-    )
-    if token != expected_token:
-        raise HTTPException(status_code=401, detail="Invalid bearer token")
 
 
 @app.middleware("http")
@@ -77,6 +85,12 @@ async def health():
 
 def ui_message_event(payload: dict) -> str:
     return f"data: {json.dumps(payload, ensure_ascii=False)}\n\n"
+
+
+def datetime_from_exp(exp: int | None) -> str:
+    if not exp:
+        return ""
+    return datetime.fromtimestamp(exp, tz=timezone.utc).isoformat()
 
 
 async def generate_ui_stream(message: str, mode: Mode) -> AsyncIterator[str]:
@@ -113,16 +127,9 @@ async def generate_ui_stream(message: str, mode: Mode) -> AsyncIterator[str]:
         yield ui_message_event({"type": "finish"})
 
 
-async def chat_stream(
-    payload: ChatRequest,
-    mode: Mode,
-    token: str,
-    config: Settings,
-) -> StreamingResponse:
-    assert_token_for_mode(token=token, mode=mode, config=config)
-
+def chat_stream_response(message: str, mode: Mode) -> StreamingResponse:
     return StreamingResponse(
-        generate_ui_stream(message=payload.message.strip(), mode=mode),
+        generate_ui_stream(message=message, mode=mode),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",
@@ -132,19 +139,56 @@ async def chat_stream(
     )
 
 
+@app.post("/api/auth/login", response_model=LoginResponse)
+async def auth_login(payload: LoginRequest) -> LoginResponse:
+    name = (payload.name or "").strip() or None
+    password = payload.password
+
+    if payload.mode == "personal":
+        if not name:
+            raise HTTPException(status_code=422, detail="Nombre requerido")
+        if not verify_user(name=name, password=password):
+            raise HTTPException(status_code=401, detail="Credenciales invalidas")
+    else:
+        if not verify_demo_password(password):
+            raise HTTPException(status_code=401, detail="Contrasena demo invalida")
+
+    token, expires_at = create_access_token(name=name, mode=payload.mode)
+    return LoginResponse(
+        token=token,
+        name=name if payload.mode == "personal" else None,
+        mode=payload.mode,
+        expires_at=expires_at.isoformat(),
+    )
+
+
+@app.post("/api/auth/logout")
+async def auth_logout() -> dict:
+    # Stateless JWT: the client simply discards the token. Endpoint kept
+    # for symmetry with /login and future server-side revocation needs.
+    return {"ok": True}
+
+
+@app.get("/api/auth/me", response_model=MeResponse)
+async def auth_me(payload: dict = Depends(get_current_user)) -> MeResponse:
+    return MeResponse(
+        name=payload.get("name"),
+        mode=payload.get("mode"),
+        expires_at=datetime_from_exp(payload.get("exp")),
+    )
+
+
 @app.post("/api/chat/personal/stream")
 async def personal_chat_stream(
     payload: ChatRequest,
-    token: str = Depends(verify_bearer_token),
-    config: Settings = Depends(get_settings),
+    _user: dict = Depends(require_personal_user),
 ):
-    return await chat_stream(payload=payload, mode="personal", token=token, config=config)
+    return chat_stream_response(message=payload.message.strip(), mode="personal")
 
 
 @app.post("/api/chat/demo/stream")
 async def demo_chat_stream(
     payload: ChatRequest,
-    token: str = Depends(verify_bearer_token),
-    config: Settings = Depends(get_settings),
+    _user: dict = Depends(require_demo_user),
 ):
-    return await chat_stream(payload=payload, mode="demo", token=token, config=config)
+    return chat_stream_response(message=payload.message.strip(), mode="demo")

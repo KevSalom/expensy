@@ -1,21 +1,17 @@
-import { useRef, useState, useCallback, useEffect } from "react";
+import { useRef, useState, useCallback } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { MessagePrimitive } from "@assistant-ui/react";
 
 export function UserMessage() {
   const [copied, setCopied] = useState(false);
-  const textRef = useRef("");
-  const textBuilt = useRef(false);
-
-  // Marcar el texto como completo tras el primer render
-  useEffect(() => {
-    textBuilt.current = true;
-  }, []);
+  const contentRef = useRef<HTMLDivElement>(null);
 
   const handleCopy = useCallback(async () => {
+    const text = contentRef.current?.textContent ?? "";
+    if (!text) return;
     try {
-      await navigator.clipboard.writeText(textRef.current);
+      await navigator.clipboard.writeText(text);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
@@ -33,12 +29,12 @@ export function UserMessage() {
           {({ part }) => {
             if (part.type === "text") {
               const text = (part as { text?: string }).text ?? "";
-              // Acumular texto solo durante el primer render
-              if (!textBuilt.current) {
-                textRef.current += text;
-              }
               return (
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{text}</ReactMarkdown>
+                <div ref={contentRef}>
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {text}
+                  </ReactMarkdown>
+                </div>
               );
             }
             return null;

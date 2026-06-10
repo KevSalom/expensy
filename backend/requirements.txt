@@ -8,3 +8,6 @@ langgraph>=1.0,<2.0
 langchain-openai
 langgraph-supervisor
 langsmith>=0.3.0
+pyjwt>=2.8
+passlib[bcrypt]>=1.7
+bcrypt<4
