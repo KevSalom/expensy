@@ -173,6 +173,7 @@ function App() {
             error={chat.error ?? null}
             isStreaming={isStreaming}
             canSend={canSend}
+            userName={session?.name ?? null}
             onClearError={chat.clearError}
             onStop={chat.stop}
           />

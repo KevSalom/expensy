@@ -7,11 +7,12 @@ type Props = {
   error: { message: string } | null;
   isStreaming: boolean;
   canSend: boolean;
+  userName: string | null;
   onClearError: () => void;
   onStop: () => void;
 };
 
-export function ChatPanel({ error, isStreaming, canSend, onClearError, onStop }: Props) {
+export function ChatPanel({ error, isStreaming, canSend, userName, onClearError, onStop }: Props) {
   return (
     <section className="chatPanel" aria-label="Chat de Expensy">
       <ThreadPrimitive.Root className="chatPanelInner">
@@ -19,7 +20,9 @@ export function ChatPanel({ error, isStreaming, canSend, onClearError, onStop }:
           <AuiIf condition={(s) => s.thread.isEmpty}>
             <div className="emptyState">
               <p>
-                <span className="emptyStatePrompt">Tengamos tus finanzas al día.</span>
+                <span className="emptyStatePrompt">
+                  Hola {userName ? userName.charAt(0).toUpperCase() + userName.slice(1).toLowerCase() : "Usuario"},
+                </span>
                 {" "}
                 <span className="emptyStateQuestion">¿Qué quieres hacer hoy?</span>
               </p>
