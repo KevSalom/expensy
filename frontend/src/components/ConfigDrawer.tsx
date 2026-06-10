@@ -1,12 +1,10 @@
-import type { Mode } from "../auth";
 import { UserSessionBar } from "./UserSessionBar";
+import { NewConversationButton } from "./NewConversationButton";
 
 type Props = {
   open: boolean;
-  mode: Mode;
   userName: string | null;
   isAuthenticated: boolean;
-  onSwitchMode: (mode: Mode) => void;
   onClose: () => void;
   onClearChat: () => void;
   onLogout: () => void;
@@ -14,10 +12,8 @@ type Props = {
 
 export function ConfigDrawer({
   open,
-  mode,
   userName,
   isAuthenticated,
-  onSwitchMode,
   onClose,
   onClearChat,
   onLogout,
@@ -53,28 +49,10 @@ export function ConfigDrawer({
           </button>
         </div>
         <div className="drawerContent">
-          <button
-            type="button"
-            className="secondaryAction"
-            onClick={onClearChat}
-            disabled={!isAuthenticated}
-          >
-            Limpiar chat
-          </button>
+          <NewConversationButton onClick={onClearChat} disabled={!isAuthenticated} />
 
           {isAuthenticated ? (
-            <>
-              <button
-                type="button"
-                className="secondaryAction"
-                onClick={() =>
-                  onSwitchMode(mode === "personal" ? "demo" : "personal")
-                }
-              >
-                Cambiar a {mode === "personal" ? "Demo" : "Personal"}
-              </button>
-              <UserSessionBar userName={userName} onLogout={onLogout} />
-            </>
+            <UserSessionBar userName={userName} onLogout={onLogout} />
           ) : null}
         </div>
       </aside>

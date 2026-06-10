@@ -140,17 +140,6 @@ function App() {
     chat.clearError();
   }
 
-  function switchMode(nextMode: Mode) {
-    // Changing mode invalidates the current session. The modal will
-    // re-open with the new mode preselected.
-    clearStoredSession();
-    sessionRef.current = null;
-    setSession(null);
-    setMode(nextMode);
-    setAuthStatus("anonymous");
-    chat.clearError();
-  }
-
   async function handleLogout() {
     await logoutRequest();
     clearStoredSession();
@@ -173,10 +162,8 @@ function App() {
     <main className="appShell">
       <section className="workspace">
         <ControlRail
-          mode={mode}
           userName={session?.name ?? null}
           isAuthenticated={authStatus === "authenticated"}
-          onSwitchMode={switchMode}
           onClearChat={clearChat}
           onLogout={handleLogout}
         />
@@ -194,10 +181,8 @@ function App() {
 
         <ConfigDrawer
           open={configOpen}
-          mode={mode}
           userName={session?.name ?? null}
           isAuthenticated={authStatus === "authenticated"}
-          onSwitchMode={switchMode}
           onClose={() => setConfigOpen(false)}
           onClearChat={clearChat}
           onLogout={handleLogout}
