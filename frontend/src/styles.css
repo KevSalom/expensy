@@ -1,10 +1,7 @@
 :root {
   color: #172018;
   background: #f3f0e7;
-  font-family:
-    "Aptos",
-    "Segoe UI",
-    sans-serif;
+  font-family: "Aptos", "Segoe UI", sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
 }
@@ -34,8 +31,7 @@ button {
   padding: 24px;
   background:
     linear-gradient(135deg, rgba(45, 106, 79, 0.12), transparent 34%),
-    linear-gradient(315deg, rgba(198, 121, 61, 0.14), transparent 40%),
-    #f3f0e7;
+    linear-gradient(315deg, rgba(198, 121, 61, 0.14), transparent 40%), #f3f0e7;
 }
 
 .workspace {
@@ -156,6 +152,25 @@ h1 {
   margin-top: auto;
 }
 
+.userBadge {
+  margin: 0;
+  padding: 10px 14px;
+  border: 1px solid rgba(45, 106, 79, 0.28);
+  border-radius: 8px;
+  color: #2d6a4f;
+  background: rgba(45, 106, 79, 0.08);
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.logoutAction {
+  margin-top: 0;
+  color: #7a361f;
+  border-color: rgba(176, 93, 49, 0.32);
+  background: #fff1e6;
+}
+
 .bottomNav {
   display: none;
 }
@@ -213,13 +228,13 @@ h1 {
 .emptyStatePrompt {
   font-weight: 600;
   color: #6a756b;
-    font-size: 1.3rem;
+  font-size: 1.3rem;
 }
 
 .emptyStateQuestion {
   font-weight: 400;
-color: #6a756b;
-   
+  color: #6a756b;
+
   font-size: 1.5rem;
 }
 
@@ -253,6 +268,48 @@ color: #6a756b;
   color: rgba(255, 250, 240, 0.7);
 }
 
+.userMessageFooter {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 2px;
+  margin-bottom: 4px;
+  padding-right: 4px;
+}
+
+.copyButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border: none;
+  border-radius: 5px;
+  color: #6a756b;
+  background: transparent;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    color 180ms ease,
+    background 180ms ease,
+    transform 120ms ease;
+}
+
+.copyButton:hover {
+  color: #2d6a4f;
+  background: rgba(45, 106, 79, 0.07);
+}
+
+.copyButton:active {
+  transform: scale(0.94);
+}
+
+.copyButton.copied {
+  color: #2d6a4f;
+  transform: scale(1.02);
+}
+
 .messageBubble.assistant .messageRole {
   color: #6a756b;
 }
@@ -276,7 +333,8 @@ color: #6a756b;
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 0.5;
   }
   50% {
@@ -401,12 +459,20 @@ button:disabled {
   line-height: 1;
 }
 
-.progress-dots span:nth-child(1) { animation-delay: 0s; }
-.progress-dots span:nth-child(2) { animation-delay: 0.2s; }
-.progress-dots span:nth-child(3) { animation-delay: 0.4s; }
+.progress-dots span:nth-child(1) {
+  animation-delay: 0s;
+}
+.progress-dots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.progress-dots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
 
 @keyframes bounce {
-  0%, 80%, 100% {
+  0%,
+  80%,
+  100% {
     opacity: 0;
     transform: translateY(0);
   }
@@ -414,6 +480,198 @@ button:disabled {
     opacity: 1;
     transform: translateY(-4px);
   }
+}
+
+.loginModalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(
+      ellipse at 30% 0%,
+      rgba(45, 106, 79, 0.18),
+      transparent 60%
+    ),
+    radial-gradient(
+      ellipse at 100% 100%,
+      rgba(176, 93, 49, 0.16),
+      transparent 60%
+    ),
+    rgba(23, 32, 24, 0.55);
+  backdrop-filter: blur(6px);
+  animation: loginModalFade 220ms ease-out;
+}
+
+@keyframes loginModalFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.loginModalCard {
+  width: min(420px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  padding: 32px;
+  border-radius: 14px;
+  background: #fffaf0;
+  box-shadow: 0 32px 80px rgba(23, 32, 24, 0.32);
+  animation: loginModalRise 320ms cubic-bezier(0.2, 0.9, 0.3, 1.1);
+}
+
+@keyframes loginModalRise {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.loginModalHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.loginModalEyebrow {
+  margin: 0;
+  color: #b05d31;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.loginModalTitle {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.6rem, 3.5vw, 2rem);
+  line-height: 1.1;
+  color: #172018;
+}
+
+.loginModalSubtitle {
+  margin: 4px 0 0;
+  color: #6a756b;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.loginModeSwitch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 6px;
+  border: 1px solid rgba(23, 32, 24, 0.14);
+  border-radius: 10px;
+  background: #ebe5d8;
+}
+
+.loginModeSwitch button {
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: #172018;
+  background: transparent;
+  font-weight: 600;
+  transition:
+    background 160ms ease,
+    color 160ms ease,
+    border-color 160ms ease;
+}
+
+.loginModeSwitch button.active {
+  color: #fffaf0;
+  border-color: #2d6a4f;
+  background: #2d6a4f;
+}
+
+.loginModeSwitch button:disabled {
+  opacity: 0.5;
+}
+
+.loginForm {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.loginField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: #4f5c50;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.loginField input {
+  min-height: 46px;
+  padding: 0 14px;
+  border: 1px solid rgba(23, 32, 24, 0.2);
+  border-radius: 8px;
+  color: #172018;
+  background: #fffaf0;
+  outline: none;
+  font: inherit;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.loginField input:focus {
+  border-color: #2d6a4f;
+  box-shadow: 0 0 0 3px rgba(45, 106, 79, 0.16);
+}
+
+.loginField input:disabled {
+  opacity: 0.6;
+}
+
+.loginError {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(176, 93, 49, 0.42);
+  border-radius: 8px;
+  color: #7a361f;
+  background: #fff1e6;
+  font-size: 0.88rem;
+  font-weight: 500;
+}
+
+.loginSubmit {
+  min-height: 48px;
+  border: 1px solid #2d6a4f;
+  border-radius: 8px;
+  color: #fffaf0;
+  background: #2d6a4f;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  transition:
+    transform 140ms ease,
+    background 140ms ease,
+    opacity 140ms ease;
+}
+
+.loginSubmit:hover:not(:disabled) {
+  background: #245a42;
+  transform: translateY(-1px);
+}
+
+.loginSubmit:disabled {
+  opacity: 0.7;
+  cursor: progress;
 }
 
 @media (max-width: 780px) {
@@ -475,7 +733,7 @@ button:disabled {
     height: 22px;
   }
 
-.configDrawer {
+  .configDrawer {
     position: fixed;
     bottom: 0;
     left: 0;
@@ -490,7 +748,9 @@ button:disabled {
     display: block;
     visibility: hidden;
     transform: translateY(100%);
-    transition: transform 280ms ease, visibility 280ms;
+    transition:
+      transform 280ms ease,
+      visibility 280ms;
     z-index: 50;
   }
 
@@ -507,7 +767,9 @@ button:disabled {
     display: block;
     visibility: hidden;
     opacity: 0;
-    transition: opacity 280ms ease, visibility 280ms;
+    transition:
+      opacity 280ms ease,
+      visibility 280ms;
   }
 
   .configDrawerOverlay.open {
