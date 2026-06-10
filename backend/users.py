@@ -47,10 +47,6 @@ def _users() -> dict[str, str]:
     return _users_cache
 
 
-def list_user_names() -> list[str]:
-    return sorted(_users().keys())
-
-
 def verify_user(name: str, password: str) -> bool:
     if not name:
         return False

@@ -17,7 +17,7 @@ from auth import (
     require_demo_user,
     require_personal_user,
 )
-from config import Settings, settings
+from config import settings
 from supervisor import stream_supervisor_events
 from users import verify_demo_password, verify_user
 
@@ -59,10 +59,6 @@ class MeResponse(BaseModel):
     name: str | None
     mode: Mode
     expires_at: str
-
-
-def get_settings() -> Settings:
-    return settings
 
 
 @app.middleware("http")

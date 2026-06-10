@@ -9,12 +9,6 @@ class Settings(BaseSettings):
     openai_base_url: str = "https://api.openai.com/v1"
     openai_model: str
 
-    # Legacy tokens retained for backwards compatibility with existing
-    # clients. The /api/auth/login flow now issues JWTs and is the
-    # preferred auth path. These are not read by the new auth code.
-    personal_api_token: str = ""
-    demo_api_token: str = ""
-
     airtable_personal_pat: str
     airtable_demo_pat: str
     airtable_personal_base_id: str
