@@ -164,11 +164,72 @@ h1 {
   letter-spacing: 0.01em;
 }
 
-.logoutAction {
-  margin-top: 0;
+.userSessionBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: auto;
+  padding: 8px;
+  border: 1px solid rgba(45, 106, 79, 0.18);
+  border-radius: 8px;
+  background: rgba(45, 106, 79, 0.04);
+}
+
+.userSessionInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.userAvatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #2d6a4f;
+  color: #fffaf0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.userSessionBar .userBadge {
+  padding: 0;
+  border: none;
+  background: transparent;
+  font-size: 0.82rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.iconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid rgba(176, 93, 49, 0.28);
+  border-radius: 6px;
   color: #7a361f;
-  border-color: rgba(176, 93, 49, 0.32);
-  background: #fff1e6;
+  background: rgba(176, 93, 49, 0.08);
+  transition:
+    background 140ms ease,
+    transform 120ms ease;
+}
+
+.iconButton:hover {
+  background: rgba(176, 93, 49, 0.16);
+  transform: translateY(-1px);
+}
+
+.iconButton:active {
+  transform: scale(0.95);
 }
 
 .bottomNav {

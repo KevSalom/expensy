@@ -1,4 +1,5 @@
 import type { Mode } from "../auth";
+import { UserSessionBar } from "./UserSessionBar";
 
 type Props = {
   mode: Mode;
@@ -24,17 +25,7 @@ export function ControlRail({
         <h1>Gastos, en lenguaje natural.</h1>
       </div>
 
-      {isAuthenticated ? (
-        <div className="sessionInfo">
-          <p className="userBadge">
-            {userName ? `Hola, ${userName}` : "Modo demo"}
-          </p>
-          <p className="sessionModeLabel">
-            Sesion activa en{" "}
-            <strong>{mode === "personal" ? "Personal" : "Demo"}</strong>
-          </p>
-        </div>
-      ) : null}
+
 
       <button
         type="button"
@@ -56,13 +47,7 @@ export function ControlRail({
           >
             Cambiar a {mode === "personal" ? "Demo" : "Personal"}
           </button>
-          <button
-            type="button"
-            className="secondaryAction logoutAction"
-            onClick={onLogout}
-          >
-            Cerrar sesion
-          </button>
+          <UserSessionBar userName={userName} onLogout={onLogout} />
         </>
       ) : null}
     </aside>

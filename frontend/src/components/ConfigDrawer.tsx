@@ -1,4 +1,5 @@
 import type { Mode } from "../auth";
+import { UserSessionBar } from "./UserSessionBar";
 
 type Props = {
   open: boolean;
@@ -52,18 +53,6 @@ export function ConfigDrawer({
           </button>
         </div>
         <div className="drawerContent">
-          {isAuthenticated ? (
-            <div className="sessionInfo">
-              <p className="userBadge">
-                {userName ? `Sesion: ${userName}` : "Sesion: modo demo"}
-              </p>
-              <p className="sessionModeLabel">
-                Activa en{" "}
-                <strong>{mode === "personal" ? "Personal" : "Demo"}</strong>
-              </p>
-            </div>
-          ) : null}
-
           <button
             type="button"
             className="secondaryAction"
@@ -84,13 +73,7 @@ export function ConfigDrawer({
               >
                 Cambiar a {mode === "personal" ? "Demo" : "Personal"}
               </button>
-              <button
-                type="button"
-                className="secondaryAction logoutAction"
-                onClick={onLogout}
-              >
-                Cerrar sesion
-              </button>
+              <UserSessionBar userName={userName} onLogout={onLogout} />
             </>
           ) : null}
         </div>
