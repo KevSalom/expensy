@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import time
 from collections.abc import AsyncIterator
-from datetime import date
+from datetime import date, datetime, timezone, timedelta
 from typing import Literal, TypedDict
 
 from langchain_openai import ChatOpenAI
@@ -56,7 +56,8 @@ async def create_expensy_graph(mode: Mode):
     
     field_map = get_field_ids(mode)
     field_map_str = format_field_map(field_map)
-    today = date.today().isoformat()
+    caracas_tz = timezone(timedelta(hours=-4))
+    today = datetime.now(caracas_tz).date().isoformat()
 
     writer_agent = create_agent(
         model=model,

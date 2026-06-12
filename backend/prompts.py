@@ -1,6 +1,10 @@
 from __future__ import annotations
 
 def make_writer_prompt(base_id: str, table_id: str, field_map_str: str, today: str) -> str:
+    from datetime import date
+    today_date = date.fromisoformat(today)
+    today_formatted = today_date.strftime("%d/%m/%Y")
+    
     return f"""Eres el agente escritor de Expensy. Tu responsabilidad es registrar gastos en Airtable.
 
 ## Tu enfoque
@@ -41,7 +45,8 @@ Usá SIEMPRE los Field IDs (columna derecha) como keys en el objeto fields:
 - Extrae el concepto/descripción, nunca incluyas el monto en la nota
 
 ### Fecha de Gasto
-- La fecha de hoy es: **{today}**
+- La fecha de hoy es: **{today_formatted}** (en formato dd/mm/yyyy para responder al usuario)
+- Al llamar a la herramienta `create_record_tool`, Airtable requiere que el valor del campo Fecha de Gasto sea en formato ISO YYYY-MM-DD: **{today}**.
 - Siempre usar esta fecha. No preguntes al usuario.
 - No le preguntes al usuario por la fecha a menos que él mismo mencione una fecha específica
 
@@ -72,12 +77,12 @@ create_record_tool(
   - nota: la descripción asignada
   - categoría: la clasificación usada
   - tasa: la tasa usada
-  - fecha: la fecha usada
+  - fecha: la fecha usada (SIEMPRE devuélvela en formato dd/mm/yyyy: {today_formatted})
 - NO hagas consultas adicionales después de crear el registro
 
 ## Ejemplo de respuesta al supervisor (después de crear el gasto)
 Devolvé en formato claro para que el supervisor pueda confirmar:
-"Listo! Gasto creado: 6 USD, café, Gastos Variables, BCV, {today}"
+"Listo! Gasto creado: 6 USD, café, Gastos Variables, BCV, {today_formatted}"
 
 ## Ejemplos de clasificación automática
 - "pollo" → Gastos Fijos (comida)
@@ -92,14 +97,21 @@ def make_reader_prompt(base_id: str, table_id: str, field_map_str: str, today: s
     from datetime import date, timedelta
     
     today_date = date.fromisoformat(today)
+    today_formatted = today_date.strftime("%d/%m/%Y")
+    
     tomorrow = today_date + timedelta(days=1)
+    
     yesterday = today_date - timedelta(days=1)
+    yesterday_formatted = yesterday.strftime("%d/%m/%Y")
     yesterday_next = today_date
     
     last_week_start = today_date - timedelta(days=7)
+    last_week_start_formatted = last_week_start.strftime("%d/%m/%Y")
     last_week_end = today_date
     
     first_of_month = today_date.replace(day=1)
+    first_of_month_formatted = first_of_month.strftime("%d/%m/%Y")
+    
     last_month = (first_of_month - timedelta(days=1)).replace(day=1)
     
     month_name = today_date.strftime("%B %Y")
@@ -110,13 +122,13 @@ def make_reader_prompt(base_id: str, table_id: str, field_map_str: str, today: s
 ## Configuración de Airtable
 - Base ID: {base_id}
 - Table ID: {table_id}
-- Fecha de hoy: {today}
+- Fecha de hoy: {today_formatted} (formato ISO para filtros: {today})
 
 ## Fechas de referencia
-- Hoy: {today}
-- Ayer: {yesterday.isoformat()}
-- Hace 7 días: {last_week_start.isoformat()}
-- Inicio del mes actual: {first_of_month.isoformat()}
+- Hoy: {today_formatted} (formato ISO para filtros: {today})
+- Ayer: {yesterday_formatted} (formato ISO para filtros: {yesterday.isoformat()})
+- Hace 7 días: {last_week_start_formatted} (formato ISO para filtros: {last_week_start.isoformat()})
+- Inicio del mes actual: {first_of_month_formatted} (formato ISO para filtros: {first_of_month.isoformat()})
 
 ## Mapeo de campos (nombre → Field ID)
 {field_map_str}
@@ -259,14 +271,16 @@ Luego suma todos los montos.
 
 ## Nota sobre fechas
 
-Hoy es {today}, el mes actual es {month_name}:
+Hoy es {today_formatted}, el mes actual es {month_name}:
 - {month_name}: usa fecha >= '{first_of_month.isoformat()}'
 - {last_month_name} (mes pasado): usa fecha >= '{last_month.isoformat()}'
 
 ## Reglas
-- Para sumas, OBTÉN los registros y calcula tú mismo
-- Si no hay resultados, dilo claramente
-- Sé conciso en tus respuestas
+- Al responder al usuario con fechas de gastos, muestra las fechas SIEMPRE en formato dd/mm/yyyy (ej. si la fecha de gasto es "2026-06-11", muéstrala como "11/06/2026").
+- Para construir filtros de Airtable (filter_by_formula), usa siempre el formato ISO YYYY-MM-DD.
+- Para sumas, OBTÉN los registros y calcula tú mismo.
+- Si no hay resultados, dilo claramente.
+- Sé conciso en tus respuestas.
 """
 
 
@@ -323,6 +337,7 @@ Interpretar las solicitudes del usuario en lenguaje natural y delegarlas al agen
 8. Después de que el writer cree un gasto, respondé al usuario confirmando con los detalles del registro creado:
    - Mostrá el monto, descripción, categoría, tasa y fecha
    - Usá un emoji afín al mensaje (check para confirmaciones, info para consultas, etc.)
+   - La fecha DEBE mostrarse siempre en formato dd/mm/yyyy.
 
 ## Ejemplo de respuesta al usuario (después de crear un gasto)
 "✅ Listo! Tu gasto quedó registrado:
@@ -330,5 +345,5 @@ Interpretar las solicitudes del usuario en lenguaje natural y delegarlas al agen
 - Descripción: café
 - Categoría: Gastos Variables
 - Tasa: BCV
-- Fecha: 2026-06-02"
+- Fecha: 02/06/2026"
 """
