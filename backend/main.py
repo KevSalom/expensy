@@ -17,6 +17,7 @@ from auth import (
     require_demo_user,
     require_personal_user,
 )
+from airtable_rest import list_records as airtable_list_records
 from config import settings
 from supervisor import stream_supervisor_events
 from users import verify_demo_password, verify_user
@@ -188,3 +189,45 @@ async def demo_chat_stream(
     _user: dict = Depends(require_demo_user),
 ):
     return chat_stream_response(message=payload.message.strip(), mode="demo")
+
+
+@app.get("/api/warmup")
+def warmup():
+    """Warmup endpoint to keep Airtable connection active by requesting the last record."""
+    results = {}
+    
+    # Warm up personal base
+    try:
+        personal_records = airtable_list_records(
+            mode="personal",
+            table_id=settings.airtable_expenses_table_id,
+            sort=[{"field": "Fecha de Gasto", "direction": "desc"}],
+            max_records=1,
+        )
+        results["personal"] = {
+            "status": "success",
+            "record_count": len(personal_records),
+            "last_record": personal_records[0] if personal_records else None,
+        }
+    except Exception as e:
+        logger.error("Warmup failed for personal Airtable: %s", e)
+        results["personal"] = {"status": "error", "error": str(e)}
+        
+    # Warm up demo base
+    try:
+        demo_records = airtable_list_records(
+            mode="demo",
+            table_id=settings.airtable_expenses_table_id,
+            sort=[{"field": "Fecha de Gasto", "direction": "desc"}],
+            max_records=1,
+        )
+        results["demo"] = {
+            "status": "success",
+            "record_count": len(demo_records),
+            "last_record": demo_records[0] if demo_records else None,
+        }
+    except Exception as e:
+        logger.error("Warmup failed for demo Airtable: %s", e)
+        results["demo"] = {"status": "error", "error": str(e)}
+        
+    return {"status": "ok", "results": results}
