@@ -152,8 +152,18 @@ async def stream_supervisor_events(message: str, mode: Mode) -> AsyncIterator[St
         if langgraph_node == "supervisor":
             content = getattr(msg, "content", None)
             if isinstance(content, str) and content:
-                if content.lower().startswith("thought"):
-                    content = content[7:].lstrip("\n ")
+                # Remove unwanted LLM prefix markers
+                prefixes = ["thought", "think", "<channel|>"]
+                while True:
+                    lower_content = content.lower()
+                    matched = False
+                    for prefix in prefixes:
+                        if lower_content.startswith(prefix):
+                            content = content[len(prefix):].lstrip("\n ")
+                            matched = True
+                            break
+                    if not matched:
+                        break
                 print(f"[PERF]     final content: '{content[:80]}...' " if len(content) > 80 else f"[PERF]     final content: '{content}'")
                 if not final_started:
                     final_started = True
