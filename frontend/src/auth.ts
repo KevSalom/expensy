@@ -116,18 +116,22 @@ export async function logout(): Promise<void> {
 export async function fetchMe(
   session: Session,
 ): Promise<{ name: string | null; mode: Mode; expiresAt: number } | null> {
-  const res = await fetch(`${API_BASE_URL}/api/auth/me`, {
-    headers: { Authorization: `Bearer ${session.token}` },
-  });
-  if (!res.ok) return null;
-  const body = (await res.json()) as {
-    name: string | null;
-    mode: Mode;
-    expires_at: string;
-  };
-  return {
-    name: body.name,
-    mode: body.mode,
-    expiresAt: Date.parse(body.expires_at),
-  };
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/auth/me`, {
+      headers: { Authorization: `Bearer ${session.token}` },
+    });
+    if (!res.ok) return null;
+    const body = (await res.json()) as {
+      name: string | null;
+      mode: Mode;
+      expires_at: string;
+    };
+    return {
+      name: body.name,
+      mode: body.mode,
+      expiresAt: Date.parse(body.expires_at),
+    };
+  } catch {
+    return null;
+  }
 }

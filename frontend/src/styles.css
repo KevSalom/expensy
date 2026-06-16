@@ -1,7 +1,7 @@
 :root {
   color: #172018;
   background: #f3f0e7;
-  font-family: "Aptos", "Segoe UI", sans-serif;
+  font-family: "Sora", sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
 }
@@ -108,7 +108,7 @@ button {
 
 h1 {
   margin: 0;
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: "Fraunces", Georgia, serif;
   font-size: clamp(2rem, 5vw, 3rem);
   line-height: 0.94;
   letter-spacing: 0;
@@ -315,7 +315,7 @@ h1 {
 .emptyState p {
   max-width: 460px;
   margin: 0;
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: "Fraunces", Georgia, serif;
 
   line-height: 1.24;
   display: flex;
@@ -598,8 +598,7 @@ button:disabled {
       rgba(176, 93, 49, 0.16),
       transparent 60%
     ),
-    rgba(23, 32, 24, 0.55);
-  backdrop-filter: blur(6px);
+    rgba(23, 32, 24, 0.8);
   animation: loginModalFade 220ms ease-out;
 }
 
@@ -652,7 +651,7 @@ button:disabled {
 
 .loginModalTitle {
   margin: 0;
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: "Fraunces", Georgia, serif;
   font-size: clamp(1.6rem, 3.5vw, 2rem);
   line-height: 1.1;
   color: #172018;
