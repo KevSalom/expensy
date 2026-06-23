@@ -133,11 +133,15 @@ function App() {
   const canSend = authStatus === "authenticated" && !isStreaming;
 
   function handleLoginSuccess(newSession: Session) {
+    // Si el modo cambió, vaciar la conversación anterior
+    if (newSession.mode !== sessionRef.current?.mode) {
+      chat.setMessages([]);
+      chat.clearError();
+    }
     sessionRef.current = newSession;
     setSession(newSession);
     setMode(newSession.mode);
     setAuthStatus("authenticated");
-    chat.clearError();
   }
 
   async function handleLogout() {
@@ -147,6 +151,8 @@ function App() {
     setSession(null);
     setAuthStatus("anonymous");
     setConfigOpen(false);
+    chat.setMessages([]);
+    chat.clearError();
   }
 
   function clearChat() {
@@ -192,7 +198,8 @@ function App() {
 
       <LoginModal
         open={showLogin}
-        initialMode={mode}
+        mode={mode}
+        onModeChange={setMode}
         onSuccess={handleLoginSuccess}
       />
     </main>

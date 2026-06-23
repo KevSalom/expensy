@@ -4,12 +4,12 @@ import { login, type Mode, type Session } from "../auth";
 
 type Props = {
   open: boolean;
-  initialMode: Mode;
+  mode: Mode;
+  onModeChange: (mode: Mode) => void;
   onSuccess: (session: Session) => void;
 };
 
-export function LoginModal({ open, initialMode, onSuccess }: Props) {
-  const [mode, setMode] = useState<Mode>(initialMode);
+export function LoginModal({ open, mode, onModeChange, onSuccess }: Props) {
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -19,16 +19,18 @@ export function LoginModal({ open, initialMode, onSuccess }: Props) {
 
   useEffect(() => {
     if (!open) return;
-    setMode(initialMode);
     setError(null);
     setPassword("");
     setName("");
-  }, [open, initialMode]);
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
-    const target = mode === "personal" ? nameRef.current : passwordRef.current;
-    target?.focus();
+    if (mode === "personal" && nameRef.current) {
+      nameRef.current.focus();
+    } else if (mode === "demo" && passwordRef.current) {
+      passwordRef.current.focus();
+    }
   }, [open, mode]);
 
   if (!open) return null;
@@ -90,7 +92,7 @@ export function LoginModal({ open, initialMode, onSuccess }: Props) {
             role="tab"
             aria-selected={mode === "demo"}
             className={mode === "demo" ? "active" : ""}
-            onClick={() => setMode("demo")}
+            onClick={() => onModeChange("demo")}
             disabled={loading}
           >
             Demo
@@ -100,7 +102,7 @@ export function LoginModal({ open, initialMode, onSuccess }: Props) {
             role="tab"
             aria-selected={mode === "personal"}
             className={mode === "personal" ? "active" : ""}
-            onClick={() => setMode("personal")}
+            onClick={() => onModeChange("personal")}
             disabled={loading}
           >
             Personal
