@@ -43,8 +43,8 @@ export function LoginModal({ open, initialMode, onSuccess }: Props) {
       setError("Escribe tu nombre");
       return;
     }
-    if (!password) {
-      setError("Escribe la contrasena");
+    if (mode === "personal" && !password) {
+      setError("Escribe la contraseña");
       return;
     }
 
@@ -52,7 +52,7 @@ export function LoginModal({ open, initialMode, onSuccess }: Props) {
     try {
       const session = await login(
         mode === "personal" ? trimmedName : null,
-        password,
+        mode === "personal" ? password : null,
         mode,
       );
       onSuccess(session);
@@ -79,8 +79,8 @@ export function LoginModal({ open, initialMode, onSuccess }: Props) {
           </h2>
           <p className="loginModalSubtitle">
             {mode === "personal"
-              ? "Ingresa tu nombre y contrasena para registrar gastos."
-              : "Ingresa la contrasena demo para probar la app."}
+              ? "Ingresa tu nombre y contraseña para registrar gastos."
+              : "Prueba la aplicación inmediatamente en modo demo."}
           </p>
         </header>
 
@@ -124,21 +124,25 @@ export function LoginModal({ open, initialMode, onSuccess }: Props) {
             </label>
           ) : null}
 
-          <label className="loginField">
-            <span>Contrasena</span>
-            <input
-              ref={passwordRef}
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete={mode === "personal" ? "current-password" : "off"}
-              placeholder={
-                mode === "personal" ? "Tu contrasena" : "Contrasena demo"
-              }
-              disabled={loading}
-              required
-            />
-          </label>
+          {mode === "personal" ? (
+            <label className="loginField">
+              <span>Contraseña</span>
+              <input
+                ref={passwordRef}
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+                placeholder="Tu contraseña"
+                disabled={loading}
+                required
+              />
+            </label>
+          ) : (
+            <p className="loginDemoMessage">
+              Puedes probar todas las funcionalidades de Expensy inmediatamente. No se requiere contraseña para el modo demo.
+            </p>
+          )}
 
           {error ? (
             <p className="loginError" role="alert">

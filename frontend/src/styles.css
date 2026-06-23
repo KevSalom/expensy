@@ -771,6 +771,18 @@ button:disabled {
   cursor: progress;
 }
 
+.loginDemoMessage {
+  margin: 0;
+  padding: 12px 14px;
+  background: rgba(45, 106, 79, 0.06);
+  border: 1px dashed rgba(45, 106, 79, 0.32);
+  border-radius: 8px;
+  color: #2d6a4f;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  text-align: center;
+}
+
 @media (max-width: 780px) {
   .appShell {
     padding: 0;

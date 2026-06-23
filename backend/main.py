@@ -45,7 +45,7 @@ class ChatRequest(BaseModel):
 
 class LoginRequest(BaseModel):
     name: str | None = None
-    password: str = Field(..., min_length=1)
+    password: str | None = Field(default=None)
     mode: Mode
 
 
@@ -144,11 +144,13 @@ async def auth_login(payload: LoginRequest) -> LoginResponse:
     if payload.mode == "personal":
         if not name:
             raise HTTPException(status_code=422, detail="Nombre requerido")
+        if not password:
+            raise HTTPException(status_code=422, detail="Contraseña requerida")
         if not verify_user(name=name, password=password):
             raise HTTPException(status_code=401, detail="Credenciales invalidas")
     else:
-        if not verify_demo_password(password):
-            raise HTTPException(status_code=401, detail="Contrasena demo invalida")
+        # En modo demo ya no se requiere verificar contraseña
+        pass
 
     token, expires_at = create_access_token(name=name, mode=payload.mode)
     return LoginResponse(

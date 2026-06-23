@@ -70,7 +70,7 @@ export function clearStoredSession(mode?: Mode): void {
 
 export async function login(
   name: string | null,
-  password: string,
+  password: string | null,
   mode: Mode,
 ): Promise<Session> {
   const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
