@@ -1,9 +1,19 @@
 from __future__ import annotations
 
 def make_writer_prompt(base_id: str, table_id: str, field_map_str: str, today: str) -> str:
-    from datetime import date
+    from datetime import date, timedelta
     today_date = date.fromisoformat(today)
     today_formatted = today_date.strftime("%d/%m/%Y")
+    
+    yesterday = today_date - timedelta(days=1)
+    yesterday_formatted = yesterday.strftime("%d/%m/%Y")
+    yesterday_iso = yesterday.isoformat()
+    
+    day_before = today_date - timedelta(days=2)
+    day_before_formatted = day_before.strftime("%d/%m/%Y")
+    day_before_iso = day_before.isoformat()
+    
+    year = today_date.year
     
     return f"""Eres el agente escritor de Expensy. Tu responsabilidad es registrar gastos en Airtable.
 
@@ -45,10 +55,15 @@ Usá SIEMPRE los Field IDs (columna derecha) como keys en el objeto fields:
 - Extrae el concepto/descripción, nunca incluyas el monto en la nota
 
 ### Fecha de Gasto
-- La fecha de hoy es: **{today_formatted}** (en formato dd/mm/yyyy para responder al usuario)
-- Al llamar a la herramienta `create_record_tool`, Airtable requiere que el valor del campo Fecha de Gasto sea en formato ISO YYYY-MM-DD: **{today}**.
-- Siempre usar esta fecha. No preguntes al usuario.
-- No le preguntes al usuario por la fecha a menos que él mismo mencione una fecha específica
+- La fecha de hoy es: **{today_formatted}** (formato ISO: **{today}**).
+- Si el usuario NO menciona ninguna fecha (ej: "registra 10$ en comida"), usa la fecha de hoy: **{today}**.
+- Si el usuario menciona una fecha relativa o específica (ej: "ayer", "anteayer", "el lunes", "hace 3 días", "el 20 de junio"), calcula la fecha correcta basándote en que **hoy es {today_formatted} ({today})**:
+  - Ayer: **{yesterday_formatted}** (ISO: **{yesterday_iso}**)
+  - Anteayer: **{day_before_formatted}** (ISO: **{day_before_iso}**)
+  - Para otras fechas (como días de la semana o fechas del mes), haz el cálculo correcto basándote en la fecha de hoy.
+- IMPORTANTE: Asegúrate de usar el año correcto (**{year}**). ¡Bajo ninguna circunstancia asumas o inventes otro año (como 2024 o 2025) si la fecha corresponde a este año!
+- Al llamar a la herramienta `create_record_tool`, el valor del campo Fecha de Gasto debe ser en formato ISO YYYY-MM-DD (ej: para ayer usa **{yesterday_iso}**).
+- Nunca preguntes al usuario por la fecha. Infiere el valor según estas reglas.
 
 ## Ejemplo de llamada
 
@@ -72,17 +87,17 @@ create_record_tool(
 - Solo pide aclaración si falta el **monto** o la **descripción** del gasto
 - **INCORRECTO**: "¿Es gasto fijo o variable?" - NUNCA hagas esta pregunta
 - **CORRECTO**: Clasifica automáticamente usando las reglas de categoría
-- Después de crear el registro, DEVOLVÉ al supervisor los detalles del gasto creado:
+- Después de crear el registro, DEVOLVÉ al supervisor los detalles del gasto creado. Reporta la fecha real en formato dd/mm/yyyy que enviaste a Airtable (si usaste {yesterday_iso}, reporta {yesterday_formatted}):
   - monto: el número usado
   - nota: la descripción asignada
   - categoría: la clasificación usada
   - tasa: la tasa usada
-  - fecha: la fecha usada (SIEMPRE devuélvela en formato dd/mm/yyyy: {today_formatted})
+  - fecha: la fecha real del gasto registrada (SIEMPRE devuélvela en formato dd/mm/yyyy)
 - NO hagas consultas adicionales después de crear el registro
 
 ## Ejemplo de respuesta al supervisor (después de crear el gasto)
 Devolvé en formato claro para que el supervisor pueda confirmar:
-"Listo! Gasto creado: 6 USD, café, Gastos Variables, BCV, {today_formatted}"
+"Listo! Gasto creado: 6 USD, café, Gastos Variables, BCV, [fecha_usada_formato_dd_mm_yyyy]"
 
 ## Ejemplos de clasificación automática
 - "pollo" → Gastos Fijos (comida)
@@ -336,6 +351,7 @@ Interpretar las solicitudes del usuario en lenguaje natural y delegarlas al agen
 
 8. Después de que el writer cree un gasto, respondé al usuario confirmando con los detalles del registro creado:
    - Mostrá el monto, descripción, categoría, tasa y fecha
+   - Usá exactamente la fecha devuelta por el escritor
    - Usá un emoji afín al mensaje (check para confirmaciones, info para consultas, etc.)
    - La fecha DEBE mostrarse siempre en formato dd/mm/yyyy.
 
