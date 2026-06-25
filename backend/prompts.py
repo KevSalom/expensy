@@ -44,10 +44,11 @@ Usá SIEMPRE los Field IDs (columna derecha) como keys en el objeto fields:
 - A menos que el usuario especifique explícitamente "Binance" o "a tasa Binance", SIEMPRE usar "BCV"
 
 ### Categoría (campo selector)
-- Dos opciones: "Gastos Fijos" o "Gastos Variables"
+- Tres opciones: "Gastos Fijos", "Gastos Variables" o "Trabajo Kevin"
 - Reglas de clasificación:
-  - **Gastos Fijos**: comida, consultas médicas, trabajo, renta de internet, renta de móvil, luz, carne, queso, pollo, gatarina, y cualquier compra recurrente/necesaria
-  - **Gastos Variables**: chuchería, helado, almuerzo en la calle, churros, chocolate, medicina, farmatodo, y cualquier compra ocasional o no esencial
+  - **Gastos Fijos**: comida, consultas médicas, renta de internet, renta de móvil, luz, carne, queso, pollo, gatarina, y cualquier compra recurrente/necesaria del hogar/personal.
+  - **Gastos Variables**: chuchería, helado, almuerzo en la calle, churros, chocolate, medicina, farmatodo, y cualquier compra ocasional o no esencial.
+  - **Trabajo Kevin**: dominios, VPS, servidores, hosting, suscripciones de IA (como ChatGPT, Claude, Midjourney o APIs), herramientas de programación y cualquier gasto relacionado con su trabajo como desarrollador web.
 
 ### Nota
 - Descripción del gasto sin incluir el monto
@@ -105,6 +106,9 @@ Devolvé en formato claro para que el supervisor pueda confirmar:
 - "medicina" → Gastos Variables (medicina)
 - "internet" → Gastos Fijos (servicio)
 - "comida" → Gastos Fijos (comida)
+- "dominio .com de mi web" → Trabajo Kevin (dominios/trabajo)
+- "vps de digitalocean" → Trabajo Kevin (servidores/trabajo)
+- "suscripción mensual de chatgpt" → Trabajo Kevin (suscripciones de IA)
 """
 
 
