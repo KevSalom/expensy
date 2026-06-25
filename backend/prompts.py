@@ -371,12 +371,12 @@ Interpretar las solicitudes del usuario en lenguaje natural y delegarlas al agen
 def make_single_agent_prompt(base_id: str, table_id: str, field_map_str: str, today: str) -> str:
     from datetime import date, timedelta
     today_date = date.fromisoformat(today)
-    today_formatted = today_date.strftime("%d/%m/%Y")
+    today_formatted = today_date.strftime("%d/%m")
     yesterday = today_date - timedelta(days=1)
-    yesterday_formatted = yesterday.strftime("%d/%m/%Y")
+    yesterday_formatted = yesterday.strftime("%d/%m")
     yesterday_iso = yesterday.isoformat()
     first_of_month = today_date.replace(day=1)
-    first_of_month_formatted = first_of_month.strftime("%d/%m/%Y")
+    first_of_month_formatted = first_of_month.strftime("%d/%m")
     month_name = today_date.strftime("%B %Y")
     year = today_date.year
 
@@ -421,7 +421,7 @@ Usa la herramienta `create_record_tool` con estos parámetros:
 
 ## REGLAS PARA CONSULTAR GASTOS (Lectura)
 Usa la herramienta `list_records_tool` (o `search_records_tool` para buscar texto libre en la Nota).
-- Muestra las fechas de gastos SIEMPRE en formato dd/mm/yyyy (ej. si en Airtable es "2026-06-11", muéstrala como "11/06/2026").
+- Muestra las fechas de gastos SIEMPRE en formato dd/mm (omitiendo el año, ej. si en Airtable es "2026-06-11", muéstrala como "11/06").
 - Para calcular totales o sumas, obtén los registros y haz la suma tú mismo.
 
 ---
