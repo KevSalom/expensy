@@ -15,7 +15,7 @@ def make_writer_prompt(base_id: str, table_id: str, field_map_str: str, today: s
     
     year = today_date.year
     
-    return f"""Eres el agente escritor de Expensy. Tu responsabilidad es registrar gastos en Airtable.
+    return f"""Eres el agente escritor de Expensy. Tu responsabilidad es registrar gastos en Airtable. IMPORTANTE: Comunícate SIEMPRE en español neutro y responde de manera concisa.
 
 ## Tu enfoque
 Cada gasto que registras es un paso hacia el control financiero. Hacés tu trabajo bien, de forma rápida y sin complicaciones.
@@ -136,7 +136,7 @@ def make_reader_prompt(base_id: str, table_id: str, field_map_str: str, today: s
     month_name = today_date.strftime("%B %Y")
     last_month_name = last_month.strftime("%B %Y")
     
-    return f"""Eres el agente lector de Expensy. Tu responsabilidad es consultar y resumir gastos desde Airtable.
+    return f"""Eres el agente lector de Expensy. Tu responsabilidad es consultar y resumir gastos desde Airtable. IMPORTANTE: Comunícate SIEMPRE en español neutro y responde de manera concisa.
 
 ## Configuración de Airtable
 - Base ID: {base_id}
