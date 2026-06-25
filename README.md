@@ -1,12 +1,13 @@
 # Expensy
 
-Expensy es una aplicacion de chat para registrar y consultar gastos con lenguaje natural. El foco del proyecto no es solo la UI: esta construido como una pequena arquitectura agentic con LangChain, LangGraph, supervisor multiagente, tools tipadas y acceso a datos reales a traves de la REST API de Airtable.
+Expensy es una aplicación de chat para registrar y consultar gastos utilizando lenguaje natural. Está construido sobre una arquitectura agéntica de alto rendimiento que conecta modelos de lenguaje (LLM) con datos reales a través de la API REST de Airtable.
 
-La idea es que un usuario pueda escribir cosas como `registra cafe 3 USD en comida` o `cuanto gaste esta semana`, y que el sistema interprete la intencion, elija la herramienta correcta y responda en streaming.
+La idea es que el usuario escriba comandos como `registra café 3 USD en comida` o `cuánto gasté este mes`, y el sistema interprete la intención, invoque la herramienta correspondiente y devuelva la respuesta en tiempo real (streaming).
 
 ## Lo Interesante del Proyecto
 
-- Orquestacion multiagente con `langgraph-supervisor`: hay un supervisor que enruta cada mensaje a un agente especialista de escritura o lectura de gastos.
+- **Agente Único con LCEL (Predeterminado - Alta Velocidad)** ⚡: Implementación directa utilizando el lenguaje de expresión de LangChain (LCEL) y un bucle de ejecución de herramientas manual. Reduce la latencia total en un **~48%** (de ~4.5s a ~2.3s) y optimiza las llamadas al LLM.
+- **Supervisor Multi-Agente (Disponible para Experimentos)**: Arquitectura basada en grafos con `langgraph-supervisor` que enruta consultas a agentes especializados de lectura (`expense_reader_agent`) o escritura (`expense_writer_agent`).
 - Tools reales con LangChain: el modelo no responde solo con texto; puede ejecutar herramientas estructuradas para registrar y recuperar gastos.
 - Integracion REST directa con Airtable: el backend se conecta a `https://api.airtable.com/v0/` con HTTP plano (sin SDK ni MCP), usando `urllib` y un cliente liviano que resuelve base, tabla y schema de forma dinamica.
 - Field IDs precargados: los IDs de campo se generan con un script y se cachean en `field_ids.py`, evitando llamadas extras al schema.
@@ -24,17 +25,20 @@ La idea es que un usuario pueda escribir cosas como `registra cafe 3 USD en comi
 
 ## Arquitectura IA
 
-Flujo de alto nivel:
+El proyecto implementa dos caminos de ejecución independientes:
 
-1. El frontend envia solo `{ "message": "..." }` al backend.
-2. FastAPI valida el bearer token y selecciona el modo `personal` o `demo`.
-3. El supervisor LangGraph recibe el texto y decide si debe delegar en:
-   `expense_writer_agent` para registrar gastos.
-4. O en:
-   `expense_reader_agent` para consultar o resumir gastos.
-5. El agente especialista invoca una tool LangChain tipada (`rest_tools.py`).
-6. La tool llama al cliente `AirtableREST` (`airtable_rest.py`) que hace HTTP requests directos a la REST API de Airtable.
-7. El resultado vuelve al usuario en streaming.
+### Camino A: Agente Único LCEL (Predeterminado)
+1. El frontend envía `{ "message": "..." }` al backend.
+2. Se selecciona el modo (`personal` o `demo`) y se carga un **prompt unificado enriquecido con Few-Shot Examples** para guiar al modelo.
+3. Se ejecuta la cadena LCEL: `prompt_template | model.bind_tools(tools)`.
+4. El agente decide e invoca la herramienta REST en la primera llamada al LLM.
+5. Tras ejecutar la herramienta en Airtable, se realiza una segunda llamada al LLM para formatear la respuesta definitiva en streaming.
+
+### Camino B: Supervisor Multi-Agente (Experimental)
+1. El frontend envía la consulta al backend.
+2. El supervisor LangGraph recibe el texto y decide si delegar la tarea a `expense_writer_agent` o a `expense_reader_agent`.
+3. El agente especialista invoca la herramienta correspondiente.
+4. El control regresa al supervisor para responder al usuario.
 
 Capacidades que demuestra esta arquitectura:
 
@@ -186,14 +190,21 @@ pnpm dev
 
 ## Endpoints
 
-- `POST /api/chat/personal/stream`
-- `POST /api/chat/demo/stream`
-- `GET /health`
+### 1. Agente Único LCEL (Recomendado)
+- `POST /api/chat/personal/single/stream`: Ejecución con Agente Único en modo personal.
+- `POST /api/chat/demo/single/stream`: Ejecución con Agente Único en modo demo.
+
+### 2. Supervisor Multi-Agente (Experimental)
+- `POST /api/chat/personal/stream`: Ejecución multi-agente en modo personal.
+- `POST /api/chat/demo/stream`: Ejecución multi-agente en modo demo.
+
+### 3. Utilidades
+- `GET /health`: Health check del servicio.
 
 Ejemplo:
 
 ```bash
-curl -N -X POST http://localhost:8000/api/chat/demo/stream \
+curl -N -X POST http://localhost:8000/api/chat/demo/single/stream \
   -H "Authorization: Bearer demo-token" \
   -H "Content-Type: application/json" \
   -d "{\"message\":\"registra cafe 3 USD en comida\"}"

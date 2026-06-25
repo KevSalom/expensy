@@ -45,13 +45,9 @@ def format_field_map(field_map: dict[str, str]) -> str:
 
 async def create_expensy_graph(mode: Mode):
     start = time.time()
-    print(f"[PERF] Iniciando create_expensy_graph...")
     
     model = create_model()
-    print(f"[PERF]   Model creado: {time.time()-start:.3f}s")
-    
     tools = get_rest_tools(mode)
-    print(f"[PERF]   REST tools cargadas: {time.time()-start:.3f}s")
     
     base_id = settings.airtable_base_id_for_mode(mode)
     table_id = settings.airtable_expenses_table_id
@@ -85,7 +81,7 @@ async def create_expensy_graph(mode: Mode):
         prompt=SUPERVISOR_PROMPT,
     )
     compiled = supervisor.compile()
-    print(f"[PERF] Grafo completo: {time.time()-start:.3f}s")
+    print(f"[Supervisor] Grafo compilado en {time.time()-start:.2f}s")
     return compiled
 
 
@@ -130,10 +126,9 @@ async def stream_supervisor_response(message: str, mode: Mode) -> AsyncIterator[
 
 async def stream_supervisor_events(message: str, mode: Mode) -> AsyncIterator[StreamEvent]:
     start = time.time()
-    print(f"[PERF] stream_supervisor_events iniciado")
+    print(f"[Supervisor] Iniciando stream...")
     
     graph = await create_expensy_graph(mode)
-    print(f"[PERF]   Grafo listo: {time.time()-start:.3f}s")
     
     input_state = {"messages": [HumanMessage(content=message)]}
     
@@ -148,8 +143,6 @@ async def stream_supervisor_events(message: str, mode: Mode) -> AsyncIterator[St
         event_count += 1
         msg, metadata = event
         langgraph_node = metadata.get("langgraph_node", "unknown")
-        
-        print(f"[PERF]   msg #{event_count} from node={langgraph_node}, type={type(msg).__name__}")
         
         if langgraph_node == "supervisor":
             content = getattr(msg, "content", None)
@@ -166,7 +159,6 @@ async def stream_supervisor_events(message: str, mode: Mode) -> AsyncIterator[St
                             break
                     if not matched:
                         break
-                print(f"[PERF]     final content: '{content[:80]}...' " if len(content) > 80 else f"[PERF]     final content: '{content}'")
                 if not final_started:
                     final_started = True
                 yield {"type": "final", "text": content}
@@ -175,19 +167,17 @@ async def stream_supervisor_events(message: str, mode: Mode) -> AsyncIterator[St
             if isinstance(content, str) and content:
                 friendly = _agent_to_friendly_message(langgraph_node, content)
                 if friendly:
-                    print(f"[PERF]     progress: {friendly}")
                     yield {"type": "progress", "text": friendly}
     
-    print(f"[PERF] Stream completo: {time.time()-start:.3f}s ({event_count} eventos)")
+    print(f"[Supervisor] Completado en {time.time()-start:.2f}s")
 
 
 async def stream_single_agent_events(message: str, mode: Mode) -> AsyncIterator[StreamEvent]:
     start = time.time()
-    print(f"[PERF] stream_single_agent_events iniciado")
+    print(f"[SingleAgent] Iniciando stream...")
     
     model = create_model()
     tools = get_rest_tools(mode)
-    print(f"[PERF]   Model y REST tools cargados: {time.time()-start:.3f}s")
     
     # Load prompts and configurations
     base_id = settings.airtable_base_id_for_mode(mode)
@@ -212,7 +202,6 @@ async def stream_single_agent_events(message: str, mode: Mode) -> AsyncIterator[
     
     # LCEL Chain
     agent_chain = prompt_template | model_with_tools
-    print(f"[PERF]   Cadena LCEL compilada: {time.time()-start:.3f}s")
     
     messages = [HumanMessage(content=message)]
     
@@ -220,7 +209,7 @@ async def stream_single_agent_events(message: str, mode: Mode) -> AsyncIterator[
     tools_map = {t.name: t for t in tools}
     
     for i in range(max_iterations):
-        print(f"[PERF]   Inicio iteración #{i+1} del bucle LCEL")
+        print(f"[SingleAgent] Iteración #{i+1}")
         # Invoke LLM
         response = await agent_chain.ainvoke({"messages": messages})
         
@@ -229,7 +218,7 @@ async def stream_single_agent_events(message: str, mode: Mode) -> AsyncIterator[
         
         if not response.tool_calls:
             # Yield final response
-            print(f"[PERF]   Bucle LCEL completo en {time.time()-start:.3f}s (sin llamadas a herramientas)")
+            print(f"[SingleAgent] Completado en {time.time()-start:.2f}s")
             yield {"type": "final", "text": response.content}
             break
             
@@ -239,7 +228,7 @@ async def stream_single_agent_events(message: str, mode: Mode) -> AsyncIterator[
             tool_args = tool_call["args"]
             tool_id = tool_call["id"]
             
-            print(f"[PERF]     Llamando a herramienta: {tool_name} con args: {tool_args}")
+            print(f"[SingleAgent] [Tool Call] {tool_name} con args: {tool_args}")
             
             friendly = "Consultando gastos"
             if tool_name == "create_record_tool":
@@ -259,7 +248,7 @@ async def stream_single_agent_events(message: str, mode: Mode) -> AsyncIterator[
             else:
                 tool_res_str = f"Error: Tool {tool_name} not found"
                 
-            print(f"[PERF]     Herramienta {tool_name} respondió: {tool_res_str[:80]}...")
+            print(f"[SingleAgent] [Tool Response] {tool_name} respondió: {tool_res_str[:80]}...")
             
             # Append ToolMessage to history
             tool_msg = ToolMessage(content=tool_res_str, name=tool_name, tool_call_id=tool_id)
