@@ -6,11 +6,13 @@ from datetime import date, datetime, timezone, timedelta
 from typing import Literal, TypedDict
 
 from langchain_openai import ChatOpenAI
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import SystemMessage, HumanMessage, ToolMessage
+from langchain_core.callbacks import BaseCallbackHandler
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain.agents import create_agent
 from langgraph_supervisor import create_supervisor
 
-from prompts import make_reader_prompt, make_writer_prompt, SUPERVISOR_PROMPT
+from prompts import make_reader_prompt, make_writer_prompt, SUPERVISOR_PROMPT, make_single_agent_prompt
 from field_ids import get_field_ids
 from rest_tools import get_rest_tools
 from config import settings
@@ -177,3 +179,88 @@ async def stream_supervisor_events(message: str, mode: Mode) -> AsyncIterator[St
                     yield {"type": "progress", "text": friendly}
     
     print(f"[PERF] Stream completo: {time.time()-start:.3f}s ({event_count} eventos)")
+
+
+async def stream_single_agent_events(message: str, mode: Mode) -> AsyncIterator[StreamEvent]:
+    start = time.time()
+    print(f"[PERF] stream_single_agent_events iniciado")
+    
+    model = create_model()
+    tools = get_rest_tools(mode)
+    print(f"[PERF]   Model y REST tools cargados: {time.time()-start:.3f}s")
+    
+    # Load prompts and configurations
+    base_id = settings.airtable_base_id_for_mode(mode)
+    table_id = settings.airtable_expenses_table_id
+    field_map = get_field_ids(mode)
+    field_map_str = format_field_map(field_map)
+    caracas_tz = timezone(timedelta(hours=-4))
+    today = datetime.now(caracas_tz).date().isoformat()
+    
+    system_prompt = make_single_agent_prompt(
+        base_id=base_id, table_id=table_id, field_map_str=field_map_str, today=today
+    )
+    
+    # Define prompt template
+    prompt_template = ChatPromptTemplate.from_messages([
+        SystemMessage(content=system_prompt),
+        MessagesPlaceholder(variable_name="messages"),
+    ])
+    
+    # Bind tools to the model using LCEL
+    model_with_tools = model.bind_tools(tools)
+    
+    # LCEL Chain
+    agent_chain = prompt_template | model_with_tools
+    print(f"[PERF]   Cadena LCEL compilada: {time.time()-start:.3f}s")
+    
+    messages = [HumanMessage(content=message)]
+    
+    max_iterations = 10
+    tools_map = {t.name: t for t in tools}
+    
+    for i in range(max_iterations):
+        print(f"[PERF]   Inicio iteración #{i+1} del bucle LCEL")
+        # Invoke LLM
+        response = await agent_chain.ainvoke({"messages": messages})
+        
+        # Add response to messages
+        messages.append(response)
+        
+        if not response.tool_calls:
+            # Yield final response
+            print(f"[PERF]   Bucle LCEL completo en {time.time()-start:.3f}s (sin llamadas a herramientas)")
+            yield {"type": "final", "text": response.content}
+            break
+            
+        # Execute tool calls
+        for tool_call in response.tool_calls:
+            tool_name = tool_call["name"]
+            tool_args = tool_call["args"]
+            tool_id = tool_call["id"]
+            
+            print(f"[PERF]     Llamando a herramienta: {tool_name} con args: {tool_args}")
+            
+            friendly = "Consultando gastos"
+            if tool_name == "create_record_tool":
+                friendly = "Guardando registro"
+            elif tool_name == "list_records_tool" or tool_name == "search_records_tool":
+                friendly = "Buscando tus gastos"
+                
+            yield {"type": "progress", "text": friendly}
+            
+            # Execute tool
+            if tool_name in tools_map:
+                try:
+                    tool_res = await tools_map[tool_name].ainvoke(tool_args)
+                    tool_res_str = str(tool_res)
+                except Exception as e:
+                    tool_res_str = f"Error: {e}"
+            else:
+                tool_res_str = f"Error: Tool {tool_name} not found"
+                
+            print(f"[PERF]     Herramienta {tool_name} respondió: {tool_res_str[:80]}...")
+            
+            # Append ToolMessage to history
+            tool_msg = ToolMessage(content=tool_res_str, name=tool_name, tool_call_id=tool_id)
+            messages.append(tool_msg)

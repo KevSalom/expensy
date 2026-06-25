@@ -20,7 +20,7 @@ const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
 
 export function modeEndpoint(mode: Mode): string {
-  return `${API_BASE_URL}/api/chat/${mode}/stream`;
+  return `${API_BASE_URL}/api/chat/${mode}/single/stream`;
 }
 
 function storageFor(mode: Mode): Storage {

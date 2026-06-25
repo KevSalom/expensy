@@ -19,7 +19,7 @@ from auth import (
 )
 from airtable_rest import list_records as airtable_list_records
 from config import settings
-from supervisor import stream_supervisor_events
+from supervisor import stream_supervisor_events, stream_single_agent_events
 from users import verify_demo_password, verify_user
 
 logging.basicConfig(
@@ -136,6 +136,51 @@ def chat_stream_response(message: str, mode: Mode) -> StreamingResponse:
     )
 
 
+async def generate_ui_stream_single(message: str, mode: Mode) -> AsyncIterator[str]:
+    message_id = f"msg_{uuid.uuid4().hex}"
+    text_id = f"text_{uuid.uuid4().hex}"
+
+    yield ui_message_event({"type": "start", "messageId": message_id})
+    yield ui_message_event({"type": "text-start", "id": text_id})
+    yield ui_message_event({"type": "data-progress", "data": {"messageId": message_id, "text": "Analizando tu solicitud..."}})
+
+    try:
+        async for event in stream_single_agent_events(message=message, mode=mode):
+            if event["type"] == "progress":
+                yield ui_message_event({"type": "data-progress", "data": {"messageId": message_id, "text": event["text"]}})
+            elif event["type"] == "final":
+                yield ui_message_event(
+                    {"type": "text-delta", "id": text_id, "delta": event["text"]}
+                )
+    except Exception:
+        logger.exception("Expensy single agent stream failed for mode=%s", mode)
+        yield ui_message_event(
+            {
+                "type": "text-delta",
+                "id": text_id,
+                "delta": (
+                    "No pude completar la accion por un error tecnico. "
+                    "Revisa la configuracion de Airtable/OpenAI y vuelve a intentar."
+                ),
+            }
+        )
+    finally:
+        yield ui_message_event({"type": "text-end", "id": text_id})
+        yield ui_message_event({"type": "finish"})
+
+
+def chat_stream_response_single(message: str, mode: Mode) -> StreamingResponse:
+    return StreamingResponse(
+        generate_ui_stream_single(message=message, mode=mode),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "x-vercel-ai-ui-message-stream": "v1",
+        },
+    )
+
+
 @app.post("/api/auth/login", response_model=LoginResponse)
 async def auth_login(payload: LoginRequest) -> LoginResponse:
     name = (payload.name or "").strip() or None
@@ -191,6 +236,22 @@ async def demo_chat_stream(
     _user: dict = Depends(require_demo_user),
 ):
     return chat_stream_response(message=payload.message.strip(), mode="demo")
+
+
+@app.post("/api/chat/personal/single/stream")
+async def personal_single_chat_stream(
+    payload: ChatRequest,
+    _user: dict = Depends(require_personal_user),
+):
+    return chat_stream_response_single(message=payload.message.strip(), mode="personal")
+
+
+@app.post("/api/chat/demo/single/stream")
+async def demo_single_chat_stream(
+    payload: ChatRequest,
+    _user: dict = Depends(require_demo_user),
+):
+    return chat_stream_response_single(message=payload.message.strip(), mode="demo")
 
 
 @app.get("/api/warmup")
